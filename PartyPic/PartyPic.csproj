@@ -25,7 +25,6 @@
     <Folder Include="Config\" />
     <Folder Include="Contracts\Common\" />
     <Folder Include="Profiles\BannedUsers\" />
-    <Folder Include="Profiles\Roles\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

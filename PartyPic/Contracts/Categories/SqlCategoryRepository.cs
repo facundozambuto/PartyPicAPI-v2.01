@@ -100,7 +100,7 @@ namespace PartyPic.Contracts.Categories
                 }
             }
 
-            var eventGrid = new CategoryGrid
+            var categoriesGrid = new CategoryGrid
             {
                 Rows = categoryRows,
                 Total = _categoryContext.Categories.Count(),
@@ -108,7 +108,7 @@ namespace PartyPic.Contracts.Categories
                 RowCount = gridRequest.RowCount
             };
 
-            return eventGrid;
+            return categoriesGrid;
         }
 
         public Category GetCategoryById(int id)

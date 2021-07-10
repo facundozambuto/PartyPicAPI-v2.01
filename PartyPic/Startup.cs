@@ -9,6 +9,7 @@ using Newtonsoft.Json.Serialization;
 using PartyPic.Contracts.Categories;
 using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
+using PartyPic.Contracts.Roles;
 using PartyPic.Contracts.Users;
 using PartyPic.Contracts.Venues;
 using System;
@@ -41,6 +42,9 @@ namespace PartyPic
             services.AddDbContext<CategoryContext>(opt => opt.UseSqlServer
                 (_configuration.GetConnectionString("PartyPicConnection")));
 
+            services.AddDbContext<RoleContext>(opt => opt.UseSqlServer
+                (_configuration.GetConnectionString("PartyPicConnection")));
+
             services.AddControllers().AddNewtonsoftJson(s => {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
@@ -56,6 +60,7 @@ namespace PartyPic
             services.AddScoped<IEventRepository, SqlEventRepository>();
             services.AddScoped<IVenueRepository, SqlVenueRepository>();
             services.AddScoped<ICategoryRespository, SqlCategoryRepository>();
+            services.AddScoped<IRoleRepository, SqlRoleRepository>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
