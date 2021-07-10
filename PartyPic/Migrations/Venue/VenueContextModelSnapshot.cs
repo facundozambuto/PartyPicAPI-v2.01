@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using PartyPic.Contracts.Events;
+using PartyPic.Contracts.Venues;
 
-namespace PartyPic.Migrations.Event
+namespace PartyPic.Migrations.Venue
 {
-    [DbContext(typeof(EventContext))]
-    partial class EventContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(VenueContext))]
+    partial class VenueContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -19,14 +19,14 @@ namespace PartyPic.Migrations.Event
                 .HasAnnotation("ProductVersion", "5.0.5")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("PartyPic.Models.Events.Event", b =>
+            modelBuilder.Entity("PartyPic.Models.Venues.Venue", b =>
                 {
-                    b.Property<int>("EventId")
+                    b.Property<int>("VenueId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<string>("Code")
+                    b.Property<string>("Address")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
@@ -34,36 +34,22 @@ namespace PartyPic.Migrations.Event
                     b.Property<DateTime>("CreatedDatetime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("LastRequest")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("QRCode")
+                    b.Property<string>("Phone")
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<DateTime>("StartDatetime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("VenueId")
-                        .IsRequired()
+                    b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int")
-                        .IsRequired();
+                    b.HasKey("VenueId");
 
-                    b.HasKey("EventId");
-
-                    b.ToTable("Events");
+                    b.ToTable("Venues");
                 });
 #pragma warning restore 612, 618
         }

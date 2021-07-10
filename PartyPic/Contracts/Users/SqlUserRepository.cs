@@ -13,7 +13,7 @@ namespace PartyPic.Contracts.Users
 {
     public class SqlUserRepository : IUserRepository
     {
-        private UserContext _userContext;
+        private readonly UserContext _userContext;
         private readonly IMapper _mapper;
 
         public SqlUserRepository(UserContext userContext, IMapper mapper)

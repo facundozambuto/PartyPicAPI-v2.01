@@ -62,7 +62,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpPut("{id}")]
-        public ActionResult UpdateCommand(int id, EventUpdateDTO eventUpdateDto)
+        public ActionResult UpdateEvent(int id, EventUpdateDTO eventUpdateDto)
         {
             return ExecuteMethod<EventController, EventApiResponse, Event>(() => _eventRepository.UpdateEvent(id, eventUpdateDto));
         }
@@ -90,7 +90,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpDelete("{id}")]
-        public ActionResult DeleteCommand(int id)
+        public ActionResult DeleteEvent(int id)
         {
             return ExecuteMethod<EventController>(() => _eventRepository.DeleteEvent(id));
         }

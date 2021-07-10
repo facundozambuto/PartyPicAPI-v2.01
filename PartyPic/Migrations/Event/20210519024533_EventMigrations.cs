@@ -20,7 +20,8 @@ namespace PartyPic.Migrations.Event
                     QRCode = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
                     Enabled = table.Column<bool>(type: "bit", nullable: false),
                     LastRequest = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedDatetime = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedDatetime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CategoryId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {

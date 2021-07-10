@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
+using PartyPic.Contracts.Venues;
 using PartyPic.DTOs.Events;
 using PartyPic.Helpers;
 using PartyPic.Models.Common;
@@ -6,19 +8,24 @@ using PartyPic.Models.Events;
 using PartyPic.Models.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace PartyPic.Contracts.Events
 {
     public class SqlEventRepository : IEventRepository
     {
-        private EventContext _eventContext;
+        private readonly EventContext _eventContext;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _config;
+        private readonly VenueContext _venueContext;
 
-        public SqlEventRepository(EventContext eventContext, IMapper mapper)
+        public SqlEventRepository(EventContext eventContext, IMapper mapper, IConfiguration config, VenueContext venueContext)
         {
             _eventContext = eventContext;
             _mapper = mapper;
+            _config = config;
+            _venueContext = venueContext;
         }
 
         public AllEventsResponse GetAllEvents()
@@ -48,10 +55,17 @@ namespace PartyPic.Contracts.Events
 
             ev.CreatedDatetime = DateTime.Now;
 
+            ev.Code = this.GenerateRandomCode(ev);
+
+            ev.QRCode = _config.GetValue<string>("QRCodeURL").Replace("{CODE}", ev.Code);
+
             _eventContext.Events.Add(ev);
+
             this.SaveChanges();
 
             var addedEvent = _eventContext.Events.OrderByDescending(u => u.CreatedDatetime).FirstOrDefault();
+
+            this.CreateImagesEventFolder(addedEvent);
 
             return addedEvent;
         }
@@ -117,7 +131,6 @@ namespace PartyPic.Contracts.Events
                                                  || u.Description.Contains(gridRequest.SearchPhrase)).ToList();
             }
 
-
             if (gridRequest.RowCount != -1 && _eventContext.Events.Count() > gridRequest.RowCount && gridRequest.Current > 0 && eventRows.Count > 0)
             {
                 var offset = gridRequest.RowCount;
@@ -159,14 +172,54 @@ namespace PartyPic.Contracts.Events
             return eventGrid;
         }
 
+        private string GenerateRandomCode(Event ev)
+        {
+            var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" + ev.Description + ev.VenueId;
+            var stringChars = new char[8];
+            var random = new Random();
+
+            for (int i = 0; i < stringChars.Length; i++)
+            {
+                stringChars[i] = chars[random.Next(chars.Length)];
+            }
+
+            var finalString = new String(stringChars).Replace(" ","").Trim();
+
+            return finalString;
+        }
+
+        private void CreateImagesEventFolder(Event addedEvent)
+        {
+            string path = _config.GetValue<string>("DirectoryEventImagesPath") + addedEvent.EventId;
+
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    throw new AlreadyExistingElementException();
+                }
+
+                DirectoryInfo dir = Directory.CreateDirectory(path);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
         private void ThrowExceptionIfPropertyIsIncorrect(Event ev, bool isNew, int id)
         {
             if (!isNew)
             {
-                if (ev.CreatedDatetime.Date != _eventContext.Events.FirstOrDefault(e => e.EventId == id).CreatedDatetime.Date)
+                if (ev.CreatedDatetime.Value != _eventContext.Events.FirstOrDefault(e => e.EventId == id).CreatedDatetime.Value)
                 {
                     throw new PropertyIncorrectException();
                 }
+            }
+
+            if (_eventContext.Events.ToList().Any(evt => evt.Description == ev.Description))
+            {
+                throw new PropertyIncorrectException();
             }
         }
 
@@ -175,11 +228,6 @@ namespace PartyPic.Contracts.Events
             if (ev == null)
             {
                 throw new ArgumentNullException(nameof(ev));
-            }
-
-            if (string.IsNullOrEmpty(ev.Code))
-            {
-                throw new ArgumentNullException(nameof(ev.Code));
             }
 
             if (string.IsNullOrEmpty(ev.Description))
@@ -197,29 +245,14 @@ namespace PartyPic.Contracts.Events
                 throw new ArgumentNullException(nameof(ev.StartDatetime));
             }
 
-            if (ev.LastRequest == null)
-            {
-                throw new ArgumentNullException(nameof(ev.LastRequest));
-            }
-
-            if (string.IsNullOrEmpty(ev.QRCode))
-            {
-                throw new ArgumentNullException(nameof(ev.QRCode));
-            }
-
-            if (string.IsNullOrEmpty(ev.VenueId.ToString()))
-            {
-                throw new ArgumentNullException(nameof(ev.VenueId));
-            }
-
             if (string.IsNullOrEmpty(ev.Enabled.ToString()))
             {
                 throw new ArgumentNullException(nameof(ev.Enabled));
             }
 
-            if (ev.CreatedDatetime == null)
+            if (!_venueContext.Venues.Any(v => v.VenueId == ev.VenueId))
             {
-                throw new ArgumentNullException(nameof(ev.CreatedDatetime));
+                throw new ArgumentNullException(nameof(ev.VenueId));
             }
         }
     }

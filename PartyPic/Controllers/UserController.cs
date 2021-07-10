@@ -62,7 +62,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpPut("{id}")]
-        public ActionResult UpdateCommand(int id, UserUpdateDTO userUpdateDto)
+        public ActionResult UpdateUser(int id, UserUpdateDTO userUpdateDto)
         {
             return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.UpdateUser(id, userUpdateDto));
         }
@@ -90,7 +90,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpDelete("{id}")]
-        public ActionResult DeleteCommand(int id)
+        public ActionResult DeleteUser(int id)
         {
             return ExecuteMethod<UserController>(() => _userRepository.DeleteUser(id));
         }

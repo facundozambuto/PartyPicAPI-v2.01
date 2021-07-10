@@ -14,5 +14,6 @@ namespace PartyPic.DTOs.Events
         public bool Enabled { get; set; }
         public DateTime LastRequest { get; set; }
         public DateTime CreatedDatetime { get; set; }
+        public int CategoryId { get; set; }
     }
 }

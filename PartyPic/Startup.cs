@@ -6,9 +6,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Serialization;
+using PartyPic.Contracts.Categories;
 using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
 using PartyPic.Contracts.Users;
+using PartyPic.Contracts.Venues;
 using System;
 
 namespace PartyPic
@@ -33,6 +35,12 @@ namespace PartyPic
             services.AddDbContext<EventContext>(opt => opt.UseSqlServer
                 (_configuration.GetConnectionString("PartyPicConnection")));
 
+            services.AddDbContext<VenueContext>(opt => opt.UseSqlServer
+                (_configuration.GetConnectionString("PartyPicConnection")));
+
+            services.AddDbContext<CategoryContext>(opt => opt.UseSqlServer
+                (_configuration.GetConnectionString("PartyPicConnection")));
+
             services.AddControllers().AddNewtonsoftJson(s => {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
@@ -46,6 +54,8 @@ namespace PartyPic
             services.AddScoped<IUserRepository, SqlUserRepository>();
             services.AddScoped<IImagesRepository, SqlImagesRepository>();
             services.AddScoped<IEventRepository, SqlEventRepository>();
+            services.AddScoped<IVenueRepository, SqlVenueRepository>();
+            services.AddScoped<ICategoryRespository, SqlCategoryRepository>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
