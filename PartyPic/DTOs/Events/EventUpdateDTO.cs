@@ -7,9 +7,6 @@ namespace PartyPic.DTOs.Events
     {
         [Required]
         [MaxLength(250)]
-        public string Code { get; set; }
-        [Required]
-        [MaxLength(250)]
         public string Name { get; set; }
         [Required]
         [MaxLength(250)]
@@ -18,15 +15,7 @@ namespace PartyPic.DTOs.Events
         public int VenueId { get; set; }
         public DateTime StartDatetime { get; set; }
         [Required]
-        [MaxLength(250)]
-        public string QRCode { get; set; }
-        [Required]
         public bool Enabled { get; set; }
-        [Required]
-        public DateTime LastRequest { get; set; }
-        [Required]
-        public DateTime CreatedDatetime { get; set; }
-        [Required]
         public int CategoryId { get; set; }
     }
 }

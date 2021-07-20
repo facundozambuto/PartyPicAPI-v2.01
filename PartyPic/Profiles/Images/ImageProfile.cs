@@ -9,7 +9,10 @@ namespace PartyPic.Profiles.Images
         public ImageProfile()
         {
             CreateMap<Image, ImageReadDTO>();
+            CreateMap<ImageReadDTO, Image>();
             CreateMap<ImageCreateDTO, Image>();
+            CreateMap<ImageFile, Image>();
+            CreateMap<Image, ImageFile>();
         }
     }
 }

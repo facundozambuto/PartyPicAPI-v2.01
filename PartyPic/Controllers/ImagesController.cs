@@ -55,18 +55,20 @@ namespace PartyPic.Controllers
             return NotFound();
         }
 
-        [HttpPost]
-        public ActionResult<ImageReadDTO> AddImage(ImageCreateDTO imageCreateDTO)
+        [HttpPost("UploadImage", Name = "UploadImage")]
+        public ActionResult UploadImage([FromForm] ImageFile uploadImage)
         {
-            var imageModel = _mapper.Map<Image>(imageCreateDTO);
-            _eventImagesRepository.AddEventImage(imageModel);
-            _eventImagesRepository.SaveChanges();
+            try
+            {
+                _eventImagesRepository.UploadImage(uploadImage);
 
-            var imageReadDTO = _mapper.Map<ImageReadDTO>(imageModel);
-
-            return CreatedAtRoute(nameof(GetImageById), new { Id = imageReadDTO.ImageId }, imageReadDTO);
+                return Ok();
+            }
+            catch (System.Exception ex)
+            {
+                throw ex;
+            }
         }
-
     }
 }
 

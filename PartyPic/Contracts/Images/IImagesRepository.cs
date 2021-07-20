@@ -1,6 +1,7 @@
 ﻿using PartyPic.Models.Images;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PartyPic.Contracts.Images
 {
@@ -8,8 +9,9 @@ namespace PartyPic.Contracts.Images
     {
         IEnumerable<Image> GetAllEventImages(int eventId, bool firstRequest, string requestTime);
         Image GetImageById(int id);
-        void AddEventImage(Image user);
+        Image AddEventImage(Image image, string fileName);
         bool SaveChanges();
         IEnumerable<Image> GetAllRemovedEventImages(int eventId, string requestTime);
+        Task UploadImage(ImageFile uploadImage);
     }
 }

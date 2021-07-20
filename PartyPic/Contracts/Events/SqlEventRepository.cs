@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using PartyPic.Contracts.Categories;
+using PartyPic.Contracts.Images;
 using PartyPic.Contracts.Venues;
 using PartyPic.DTOs.Events;
 using PartyPic.Helpers;
@@ -10,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using MailKit.Net.Smtp;
+using MimeKit;
+using PartyPic.Contracts.Users;
 
 namespace PartyPic.Contracts.Events
 {
@@ -19,33 +25,80 @@ namespace PartyPic.Contracts.Events
         private readonly IMapper _mapper;
         private readonly IConfiguration _config;
         private readonly VenueContext _venueContext;
+        private readonly CategoryContext _categoryContext;
+        private readonly ImagesContext _imagesContext;
+        private readonly UserContext _userContext;
 
-        public SqlEventRepository(EventContext eventContext, IMapper mapper, IConfiguration config, VenueContext venueContext)
+        public SqlEventRepository(
+            EventContext eventContext, 
+            IMapper mapper, 
+            IConfiguration config, 
+            VenueContext venueContext, 
+            CategoryContext categoryContext, 
+            ImagesContext imagesContext,
+            UserContext userContext)
         {
             _eventContext = eventContext;
             _mapper = mapper;
             _config = config;
             _venueContext = venueContext;
+            _categoryContext = categoryContext;
+            _imagesContext = imagesContext;
+            _userContext = userContext;
         }
 
         public AllEventsResponse GetAllEvents()
         {
+            var events = _mapper.Map<List<EventReadDTO>>(_eventContext.Events.ToList());
+
+            foreach (EventReadDTO ev in events)
+            {
+                if (_venueContext.Venues.FirstOrDefault(v => v.VenueId == ev.VenueId) != null)
+                {
+                    ev.VenueName = _venueContext.Venues.FirstOrDefault(v => v.VenueId == ev.VenueId).Name;
+                }
+            }
+
             return new AllEventsResponse
             {
-                Events = _eventContext.Events.ToList()
+                Events = events
             };
         }
 
-        public Event GetEventById(int id)
+        public EventReadDTO GetEventById(int id)
         {
-            var user = _eventContext.Events.FirstOrDefault(ev => ev.EventId == id);
+            var retrievedEvent = _eventContext.Events.AsNoTracking().FirstOrDefault(ev => ev.EventId.Equals(id));
 
-            if (user == null)
+            if (retrievedEvent == null)
             {
                 throw new NotEventFoundException();
             }
 
-            return user;
+            var evnt = _mapper.Map<EventReadDTO>(retrievedEvent);
+
+            if (_venueContext.Venues.FirstOrDefault(v => v.VenueId == evnt.VenueId) != null)
+            {
+                evnt.VenueName = _venueContext.Venues.FirstOrDefault(v => v.VenueId == evnt.VenueId).Name;
+            }
+
+            if (_categoryContext.Categories.FirstOrDefault(c => c.CategoryId == evnt.CategoryId) != null)
+            {
+                evnt.CategoryDescription = _categoryContext.Categories.FirstOrDefault(c => c.CategoryId == evnt.CategoryId).Description;
+            }
+
+            return evnt;
+        }
+
+        public Event GetRawEventById(int id)
+        {
+            var retrievedEvent = _eventContext.Events.FirstOrDefault(ev => ev.EventId.Equals(id));
+
+            if (retrievedEvent == null)
+            {
+                throw new NotEventFoundException();
+            }
+
+            return retrievedEvent;
         }
 
         public Event CreateEvent(Event ev)
@@ -77,38 +130,35 @@ namespace PartyPic.Contracts.Events
 
         public void DeleteEvent(int id)
         {
-            var user = this.GetEventById(id);
+            var evt = _mapper.Map<Event>(this.GetRawEventById(id));
 
-            if (user == null)
+            if (evt == null)
             {
                 throw new NotEventFoundException();
             }
 
-            _eventContext.Events.Remove(user);
+            if (_imagesContext.Images.Any(i => i.EventId == evt.EventId))
+            {
+                throw new ExistingAsociatedImagesToEventException();
+            }
+
+            _eventContext.Events.Remove(evt);
 
             this.SaveChanges();
         }
 
-        public Event UpdateEvent(int id, EventUpdateDTO eventUpdateDto)
+        public EventReadDTO UpdateEvent(int id, EventUpdateDTO eventUpdateDto)
         {
-            var ev = _mapper.Map<Event>(eventUpdateDto);
+            var retrievedEvent = this.GetRawEventById(id);
 
-            var retrievedEvent = this.GetEventById(id);
+            retrievedEvent = _mapper.Map(eventUpdateDto, retrievedEvent);
 
-            if (retrievedEvent == null)
-            {
-                throw new NotEventFoundException();
-            }
-
-            this.ThrowExceptionIfArgumentIsNull(ev);
-            this.ThrowExceptionIfPropertyIsIncorrect(ev, false, id);
-
-            _mapper.Map(eventUpdateDto, retrievedEvent);
+            this.ThrowExceptionIfArgumentIsNull(retrievedEvent);
+            this.ThrowExceptionIfPropertyIsIncorrect(retrievedEvent, false, id);
 
             _eventContext.Events.Update(retrievedEvent);
 
             this.SaveChanges();
-
             return this.GetEventById(id);
         }
 
@@ -128,7 +178,8 @@ namespace PartyPic.Contracts.Events
             if (!string.IsNullOrEmpty(gridRequest.SearchPhrase))
             {
                 eventRows = _eventContext.Events.Where(u => u.Code.Contains(gridRequest.SearchPhrase)
-                                                 || u.Description.Contains(gridRequest.SearchPhrase)).ToList();
+                                                 || u.Description.Contains(gridRequest.SearchPhrase)
+                                                 || u.Name.Contains(gridRequest.SearchPhrase)).ToList();
             }
 
             if (gridRequest.RowCount != -1 && _eventContext.Events.Count() > gridRequest.RowCount && gridRequest.Current > 0 && eventRows.Count > 0)
@@ -161,15 +212,94 @@ namespace PartyPic.Contracts.Events
                 }
             }
 
+            var events = _mapper.Map<List<EventReadDTO>>(eventRows);
+
+            foreach (EventReadDTO ev in events)
+            {
+                if (_venueContext.Venues.FirstOrDefault(v => v.VenueId == ev.VenueId) != null)
+                {
+                    ev.VenueName = _venueContext.Venues.FirstOrDefault(v => v.VenueId == ev.VenueId).Name;
+                }
+
+                if (_categoryContext.Categories.FirstOrDefault(c => c.CategoryId == ev.CategoryId) != null)
+                {
+                    ev.CategoryDescription = _categoryContext.Categories.FirstOrDefault(c => c.CategoryId == ev.CategoryId).Description;
+                }
+            }
+
             var eventGrid = new EventGrid
             {
-                Rows = eventRows,
+                Rows = events,
                 Total = _eventContext.Events.Count(),
                 Current = gridRequest.Current,
                 RowCount = gridRequest.RowCount
             };
 
             return eventGrid;
+        }
+
+        public void SendInstructionsByEmail(int id)
+        {
+            var evt = this.GetEventById(id);
+
+            var venue = _venueContext.Venues.FirstOrDefault(v => v.VenueId == evt.VenueId);
+
+            var userName = _userContext.Users.FirstOrDefault(u => u.UserId == venue.UserId);
+
+            MimeMessage message = new MimeMessage();
+
+            MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("emailFromAdmin"));
+            message.From.Add(from);
+
+            //MailboxAddress to = new MailboxAddress(userName.Name, userName.Email); DESCOMENTAR TODO
+
+            MailboxAddress to = new MailboxAddress(userName.Name, "facundozambuto@gmail.com");
+
+            message.To.Add(to);
+
+            message.Subject = _config.GetValue<string>("EmailSubject");
+
+            BodyBuilder bodyBuilder = new BodyBuilder();
+            bodyBuilder.HtmlBody = _config.GetValue<string>("emailTemplate").Replace("***eventName***", evt.Name).Replace("***qrCode***", evt.QRCode).Replace("***eventCode***", evt.Code);
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            foreach (var body in message.BodyParts.OfType<TextPart>())
+                body.ContentTransferEncoding = ContentEncoding.Base64;
+
+
+            SmtpClient client = new SmtpClient();
+            client.CheckCertificateRevocation = false;
+            client.Connect(_config.GetValue<string>("SMTPServer"), 587, false);
+            client.Authenticate(_config.GetValue<string>("SMTPUser"), _config.GetValue<string>("SMTPPassword"));
+
+            client.Send(message);
+            client.Disconnect(true);
+            client.Dispose();
+        }
+
+        public EventReadDTO GetEventByEventCode(string eventCode)
+        {
+            var retrievedEvent = _eventContext.Events.AsNoTracking().FirstOrDefault(ev => ev.Code == eventCode);
+
+            if (retrievedEvent == null)
+            {
+                throw new NotEventFoundException();
+            }
+
+            var evnt = _mapper.Map<EventReadDTO>(retrievedEvent);
+
+            if (_venueContext.Venues.FirstOrDefault(v => v.VenueId == evnt.VenueId) != null)
+            {
+                evnt.VenueName = _venueContext.Venues.FirstOrDefault(v => v.VenueId == evnt.VenueId).Name;
+            }
+
+            if (_categoryContext.Categories.FirstOrDefault(c => c.CategoryId == evnt.CategoryId) != null)
+            {
+                evnt.CategoryDescription = _categoryContext.Categories.FirstOrDefault(c => c.CategoryId == evnt.CategoryId).Description;
+            }
+
+            return evnt;
         }
 
         private string GenerateRandomCode(Event ev)
@@ -215,11 +345,6 @@ namespace PartyPic.Contracts.Events
                 {
                     throw new PropertyIncorrectException();
                 }
-            }
-
-            if (_eventContext.Events.ToList().Any(evt => evt.Description == ev.Description))
-            {
-                throw new PropertyIncorrectException();
             }
         }
 

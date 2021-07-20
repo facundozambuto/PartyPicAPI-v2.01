@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using PartyPic.DTOs.Events;
+using System.Collections.Generic;
 
 namespace PartyPic.Models.Events
 {
     public class AllEventsResponse
     {
-        public List<Event> Events { get; set; }
+        public List<EventReadDTO> Events { get; set; }
     }
 }

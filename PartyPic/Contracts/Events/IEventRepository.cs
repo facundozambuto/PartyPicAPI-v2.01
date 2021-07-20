@@ -7,12 +7,14 @@ namespace PartyPic.Contracts.Events
     public interface IEventRepository
     {
         AllEventsResponse GetAllEvents();
-        Event GetEventById(int id);
+        EventReadDTO GetEventById(int id);
         Event CreateEvent(Event ev);
         bool SaveChanges();
         void DeleteEvent(int id);
-        Event UpdateEvent(int id, EventUpdateDTO ev);
+        EventReadDTO UpdateEvent(int id, EventUpdateDTO ev);
         void PartiallyUpdate(int id, EventUpdateDTO ev);
         EventGrid GetAllEventsForGrid(GridRequest gridRequest);
+        void SendInstructionsByEmail(int id);
+        EventReadDTO GetEventByEventCode(string eventCode);
     }
 }

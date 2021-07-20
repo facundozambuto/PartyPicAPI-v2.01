@@ -48,9 +48,9 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet("{id}", Name = "GetEventById")]
-        public ActionResult<Event> GetEventById(int id)
+        public ActionResult<EventReadDTO> GetEventById(int id)
         {
-            return ExecuteMethod<EventController, EventApiResponse, Event>(() => _eventRepository.GetEventById(id));
+            return ExecuteMethod<EventController, EventApiResponse, EventReadDTO>(() => _eventRepository.GetEventById(id));
         }
 
         [HttpPost]
@@ -64,7 +64,7 @@ namespace PartyPic.Controllers
         [HttpPut("{id}")]
         public ActionResult UpdateEvent(int id, EventUpdateDTO eventUpdateDto)
         {
-            return ExecuteMethod<EventController, EventApiResponse, Event>(() => _eventRepository.UpdateEvent(id, eventUpdateDto));
+            return ExecuteMethod<EventController, EventApiResponse, EventReadDTO>(() => _eventRepository.UpdateEvent(id, eventUpdateDto));
         }
 
         [HttpPatch("{id}")]
@@ -93,6 +93,20 @@ namespace PartyPic.Controllers
         public ActionResult DeleteEvent(int id)
         {
             return ExecuteMethod<EventController>(() => _eventRepository.DeleteEvent(id));
+        }
+
+        [HttpPost("{eventId}")]
+        [Route("~/api/events/sendInstructions")]
+        public ActionResult SendInstructionsByEmail(EventReadDTO evt)
+
+        {
+            return ExecuteMethod<EventController>(() => _eventRepository.SendInstructionsByEmail(evt.EventId));
+        }
+
+        [HttpGet("GetByEventCode/{eventCode}", Name = "GetEventByEventCode")]
+        public ActionResult<EventReadDTO> GetEventByEventCode(string eventCode)
+        {
+            return ExecuteMethod<EventController, EventApiResponse, EventReadDTO>(() => _eventRepository.GetEventByEventCode(eventCode));
         }
     }
 }

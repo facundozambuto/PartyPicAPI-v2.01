@@ -9,6 +9,9 @@ namespace PartyPic.Profiles.Events
         public EventProfile()
         {
             CreateMap<Event, EventReadDTO>();
+            CreateMap<EventReadDTO, Event>();
+            CreateMap<EventReadDTO, EventUpdateDTO>();
+            CreateMap<EventUpdateDTO, EventReadDTO>();
             CreateMap<EventCreateDTO, Event>();
             CreateMap<EventGrid, EventReadDTOGrid>();
             CreateMap<EventReadDTOGrid, EventGrid>();
@@ -22,6 +25,8 @@ namespace PartyPic.Profiles.Events
             CreateMap<GridEventApiResponse, EventGrid>();
             CreateMap<EventApiResponse, Event>();
             CreateMap<Event, EventApiResponse>();
+            CreateMap<EventApiResponse, EventReadDTO>();
+            CreateMap<EventReadDTO, EventApiResponse>();
         }
     }
 }
