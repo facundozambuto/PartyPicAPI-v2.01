@@ -1,10 +1,16 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
 using PartyPic.DTOs.Images;
+using PartyPic.Models.Exceptions;
 using PartyPic.Models.Images;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Threading.Tasks;
 
 namespace PartyPic.Controllers
 {
@@ -15,17 +21,20 @@ namespace PartyPic.Controllers
     {
         private readonly IImagesRepository _eventImagesRepository;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _config;
+        private readonly IEventRepository _eventRepository;
 
-        public ImagesController(IImagesRepository eventImagesRepository, IMapper mapper)
+        public ImagesController(IImagesRepository eventImagesRepository, IMapper mapper, IConfiguration config, IEventRepository eventRepository)
         {
             _eventImagesRepository = eventImagesRepository;
             _mapper = mapper;
+            _config = config;
+            _eventRepository = eventRepository;
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Image>> GetAllImages(int eventId, bool firstRequest, string requestTime)
         {
-
             var imageItems = _eventImagesRepository.GetAllEventImages(eventId, firstRequest, requestTime);
 
             return Ok(_mapper.Map<IEnumerable<ImageReadDTO>>(imageItems));
@@ -35,7 +44,6 @@ namespace PartyPic.Controllers
         [Route("~/api/images/removed")]
         public ActionResult<IEnumerable<Image>> GetAllRemovedImages(int eventId, string requestTime)
         {
-
             var imageItems = _eventImagesRepository.GetAllRemovedEventImages(eventId, requestTime);
 
             return Ok(_mapper.Map<IEnumerable<ImageReadDTO>>(imageItems));
@@ -64,6 +72,46 @@ namespace PartyPic.Controllers
 
                 return Ok();
             }
+            catch (System.Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        [HttpGet("DownloadAlbum", Name = "DownloadAlbum")]
+        [Route("~/api/images/download")]
+        public async Task<IActionResult> DownloadAlbum(int eventId)
+        {
+            try
+            {
+                var evt = _eventRepository.GetEventById(eventId);
+
+                if (evt == null)
+                {
+                    throw new NotEventFoundException();
+                }
+
+                var filePaths = Directory.GetFiles(Path.Combine(_config.GetValue<string>("DirectoryEventImagesPath") + eventId));
+
+                var zipFileMemoryStream = new MemoryStream();
+
+                using (ZipArchive archive = new ZipArchive(zipFileMemoryStream, ZipArchiveMode.Update, leaveOpen: true))
+                {
+                    foreach (var filePath in filePaths)
+                    {
+                        var fileName = Path.GetFileName(filePath);
+                        var entry = archive.CreateEntry(fileName);
+                        using (var entryStream = entry.Open())
+                        using (var fileStream = System.IO.File.OpenRead(filePath))
+                        {
+                            await fileStream.CopyToAsync(entryStream);
+                        }
+                    }
+                }
+
+                zipFileMemoryStream.Seek(0, SeekOrigin.Begin);
+                
+                return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");            }
             catch (System.Exception ex)
             {
                 throw ex;

@@ -111,18 +111,23 @@ namespace PartyPic.Contracts.Venues
             return this.GetVenueById(id);
         }
 
-        public VenueGrid GetAllVenuesForGrid(GridRequest gridRequest)
+        public VenueReadDTOGrid GetAllVenuesForGrid(GridRequest gridRequest)
         {
-            var venueRows = new List<Venue>();
+            var venueRows = _mapper.Map<List<VenueReadDTO>>(_venueContext.Venues.ToList());
 
-            venueRows = _venueContext.Venues.ToList();
+            foreach (VenueReadDTO ve in venueRows)
+            {
+                if (_userContext.Users.FirstOrDefault(u => u.UserId == ve.UserId) != null)
+                {
+                    ve.ManagerName = _userContext.Users.FirstOrDefault(u => u.UserId == ve.UserId).Name;
+                }
+            }
 
             if (!string.IsNullOrEmpty(gridRequest.SearchPhrase))
             {
-                venueRows = _venueContext.Venues.Where(v => v.Address.Contains(gridRequest.SearchPhrase)
-                                                 || v.Name.Contains(gridRequest.SearchPhrase)).ToList();
+                venueRows = _mapper.Map<List<VenueReadDTO>>(_venueContext.Venues.Where(v => v.Address.Contains(gridRequest.SearchPhrase)
+                                                 || v.Name.Contains(gridRequest.SearchPhrase)).ToList());
             }
-
 
             if (gridRequest.RowCount != -1 && _venueContext.Venues.Count() > gridRequest.RowCount && gridRequest.Current > 0 && venueRows.Count > 0)
             {
@@ -154,7 +159,7 @@ namespace PartyPic.Contracts.Venues
                 }
             }
 
-            var venueGrid = new VenueGrid
+            var venueGrid = new VenueReadDTOGrid
             {
                 Rows = venueRows,
                 Total = _venueContext.Venues.Count(),
@@ -219,6 +224,35 @@ namespace PartyPic.Contracts.Venues
             {
                 throw new NotUserFoundException();
             }
+        }
+
+        public VenueReadDTO GetVenueFullData(int venueId)
+        {
+            var venue = _venueContext.Venues.FirstOrDefault(v => v.VenueId == venueId);
+
+            if (venue == null)
+            {
+                throw new NotVenueFoundException();
+            }
+
+            var venueManager = _userContext.Users.FirstOrDefault(u => u.UserId == venue.UserId);
+
+            if (venueManager == null)
+            {
+                throw new NotUserFoundException();
+            }
+
+            return new VenueReadDTO
+            {
+                Name = venue.Name,
+                Address = venue.Address,
+                Phone = venue.Phone,
+                ManagerName = venueManager.Name,
+                ManagerEmail = venueManager.Email,
+                ManagerMobilePhone = venueManager.MobilePhone,
+                ManagerAddress = venueManager.Address,
+                ManagerCuil = venueManager.Cuil
+            };
         }
     }
 }

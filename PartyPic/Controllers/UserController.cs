@@ -32,6 +32,13 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Route("~/api/users/venueUsers")]
+        public ActionResult GetAllVenueUsers()
+        {
+            return ExecuteMethod<UserController, GetAllUsersApiResponse, AllUsersResponse>(() => _userRepository.GetAllVenueUsers());
+        }
+
+        [HttpGet]
         [Route("~/api/users/grid")]
         public ActionResult<UserGrid> GetAllUsersForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
         {

@@ -33,7 +33,7 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Route("~/api/venues/grid")]
-        public ActionResult<VenueGrid> GetAllVenuesForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
+        public ActionResult<VenueReadDTOGrid> GetAllVenuesForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
         {
             GridRequest gridRequest = new GridRequest
             {
@@ -44,13 +44,20 @@ namespace PartyPic.Controllers
                 OrderBy = orderBy
             };
 
-            return ExecuteMethod<VenueController, GridVenueApiResponse, VenueGrid>(() => _venueRepository.GetAllVenuesForGrid(gridRequest));
+            return ExecuteMethod<VenueController, GridVenueApiResponse, VenueReadDTOGrid>(() => _venueRepository.GetAllVenuesForGrid(gridRequest));
         }
 
         [HttpGet("{id}", Name = "GetVenueById")]
-        public ActionResult<Venue> GetVenueById(int id)
+        public ActionResult<Venue> GetVenueById(int venueId)
         {
-            return ExecuteMethod<VenueController, VenueApiResponse, Venue>(() => _venueRepository.GetVenueById(id));
+            return ExecuteMethod<VenueController, VenueApiResponse, Venue>(() => _venueRepository.GetVenueById(venueId));
+        }
+
+        [HttpGet("{id}", Name = "GetVenueManager")]
+        [Route("~/api/venues/venueManager")]
+        public ActionResult<Venue> GetVenueManager([FromQuery] int venueId)
+        {
+            return ExecuteMethod<VenueController, VenueApiResponse, VenueReadDTO>(() => _venueRepository.GetVenueFullData(venueId));
         }
 
         [HttpPost]
@@ -68,9 +75,9 @@ namespace PartyPic.Controllers
         }
 
         [HttpPatch("{id}")]
-        public ActionResult PartialVenueUpdate(int id, JsonPatchDocument<VenueUpdateDTO> patchDoc)
+        public ActionResult PartialVenueUpdate(int venueId, JsonPatchDocument<VenueUpdateDTO> patchDoc)
         {
-            var venueModelFromRepo = _venueRepository.GetVenueById(id);
+            var venueModelFromRepo = _venueRepository.GetVenueById(venueId);
             if (venueModelFromRepo == null)
             {
                 return ExecuteMethod<VenueController>(() => new NotVenueFoundException());
@@ -86,13 +93,13 @@ namespace PartyPic.Controllers
 
             _mapper.Map(venueToPatch, venueModelFromRepo);
 
-            return ExecuteMethod<VenueController>(() => _venueRepository.PartiallyUpdate(id, venueToPatch));
+            return ExecuteMethod<VenueController>(() => _venueRepository.PartiallyUpdate(venueId, venueToPatch));
         }
 
         [HttpDelete("{id}")]
-        public ActionResult DeleteVenue(int id)
+        public ActionResult DeleteVenue(int venueId)
         {
-            return ExecuteMethod<VenueController>(() => _venueRepository.DeleteVenue(id));
+            return ExecuteMethod<VenueController>(() => _venueRepository.DeleteVenue(venueId));
         }
     }
 }

@@ -7,12 +7,13 @@ namespace PartyPic.Contracts.Venues
     public interface IVenueRepository
     {
         AllVenuesResponse GetAllVenues();
-        Venue GetVenueById(int id);
+        Venue GetVenueById(int venueId);
         Venue CreateVenue(Venue venue);
         bool SaveChanges();
-        void DeleteVenue(int id);
-        Venue UpdateVenue(int id, VenueUpdateDTO venue);
-        void PartiallyUpdate(int id, VenueUpdateDTO veue);
-        VenueGrid GetAllVenuesForGrid(GridRequest gridRequest);
+        void DeleteVenue(int venueId);
+        Venue UpdateVenue(int venueId, VenueUpdateDTO venue);
+        void PartiallyUpdate(int venueId, VenueUpdateDTO veue);
+        VenueReadDTOGrid GetAllVenuesForGrid(GridRequest gridRequest);
+        VenueReadDTO GetVenueFullData(int venueId);
     }
 }

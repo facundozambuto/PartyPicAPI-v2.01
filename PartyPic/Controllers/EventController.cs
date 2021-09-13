@@ -98,7 +98,6 @@ namespace PartyPic.Controllers
         [HttpPost("{eventId}")]
         [Route("~/api/events/sendInstructions")]
         public ActionResult SendInstructionsByEmail(EventReadDTO evt)
-
         {
             return ExecuteMethod<EventController>(() => _eventRepository.SendInstructionsByEmail(evt.EventId));
         }

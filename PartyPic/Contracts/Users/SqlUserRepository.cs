@@ -108,6 +108,14 @@ namespace PartyPic.Contracts.Users
             return this.GetUserById(id);
         }
 
+        public AllUsersResponse GetAllVenueUsers()
+        {
+            return new AllUsersResponse
+            {
+                Users = _userContext.Users.Where(u => u.RoleId == 2).ToList()
+            };
+        }
+
         public UserGrid GetAllUsersForGrid(GridRequest gridRequest)
         {
             var userRows = new List<User>();

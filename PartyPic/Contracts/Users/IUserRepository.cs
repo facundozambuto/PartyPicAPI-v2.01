@@ -14,5 +14,6 @@ namespace PartyPic.Contracts.Users
         User UpdateUser(int id, UserUpdateDTO user);
         void PartiallyUpdate(int id, UserUpdateDTO user);
         UserGrid GetAllUsersForGrid(GridRequest gridRequest);
+        AllUsersResponse GetAllVenueUsers();
     }
 }

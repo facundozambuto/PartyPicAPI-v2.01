@@ -249,9 +249,8 @@ namespace PartyPic.Contracts.Events
             MimeMessage message = new MimeMessage();
 
             MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("emailFromAdmin"));
+            
             message.From.Add(from);
-
-            //MailboxAddress to = new MailboxAddress(userName.Name, userName.Email); DESCOMENTAR TODO
 
             MailboxAddress to = new MailboxAddress(userName.Name, "facundozambuto@gmail.com");
 
@@ -267,10 +266,9 @@ namespace PartyPic.Contracts.Events
             foreach (var body in message.BodyParts.OfType<TextPart>())
                 body.ContentTransferEncoding = ContentEncoding.Base64;
 
-
             SmtpClient client = new SmtpClient();
             client.CheckCertificateRevocation = false;
-            client.Connect(_config.GetValue<string>("SMTPServer"), 587, false);
+            client.Connect(_config.GetValue<string>("SMTPServer"), 2525, MailKit.Security.SecureSocketOptions.StartTls);
             client.Authenticate(_config.GetValue<string>("SMTPUser"), _config.GetValue<string>("SMTPPassword"));
 
             client.Send(message);

@@ -20,8 +20,12 @@ namespace PartyPic.Profiles.Venues
             CreateMap<GetAllVenuesApiResponse, AllVenuesResponse>();
             CreateMap<VenueGrid, GridVenueApiResponse>();
             CreateMap<GridVenueApiResponse, VenueGrid>();
+            CreateMap<VenueReadDTOGrid, GridVenueApiResponse>();
+            CreateMap<GridVenueApiResponse, VenueReadDTOGrid>();
             CreateMap<VenueApiResponse, Venue>();
             CreateMap<Venue, VenueApiResponse>();
+            CreateMap<VenueApiResponse, VenueReadDTO>();
+            CreateMap<VenueReadDTO, VenueApiResponse>();
         }
     }
 }
