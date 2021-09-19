@@ -28,12 +28,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult GetAllCategories()
         {
             return ExecuteMethod<CategoryController, GetAllCategoriesApiResponse, AllCategoriesResponse>(() => _categoryRepository.GetAllCategories());
         }
 
         [HttpGet]
+        [Authorize]
         [Route("~/api/categories/grid")]
         public ActionResult<CategoryGrid> GetAllCategoriesForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
         {
@@ -50,12 +52,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet("{id}", Name = "GetCategoryById")]
+        [Authorize]
         public ActionResult<Category> GetCategoryById(int id)
         {
             return ExecuteMethod<CategoryController, CategoryApiResponse, Category>(() => _categoryRepository.GetCategoryById(id));
         }
 
         [HttpPost]
+        [Authorize]
         public ActionResult<Category> CreateCategory(CategoryCreateDTO categoryCreateDTO)
         {
             var categoryModel = _mapper.Map<Category>(categoryCreateDTO);
@@ -64,12 +68,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public ActionResult UpdateCategory(int id, CategoryUpdateDTO categoryUpdateDto)
         {
             return ExecuteMethod<CategoryController, CategoryApiResponse, Category>(() => _categoryRepository.UpdateCategory(id, categoryUpdateDto));
         }
 
         [HttpPatch("{id}")]
+        [Authorize]
         public ActionResult PartialCategoryUpdate(int id, JsonPatchDocument<CategoryUpdateDTO> patchDoc)
         {
             var categoryModelFromRepo = _categoryRepository.GetCategoryById(id);
@@ -92,6 +98,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public ActionResult DeleteCategory(int id)
         {
             return ExecuteMethod<CategoryController>(() => _categoryRepository.DeleteCategory(id));

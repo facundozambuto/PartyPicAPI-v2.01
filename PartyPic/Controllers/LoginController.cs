@@ -1,11 +1,14 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PartyPic.Contracts.Logger;
 using PartyPic.Contracts.Users;
 using PartyPic.DTOs.Users;
 using PartyPic.Models.Users;
+using RestSharp;
+using System;
 
 namespace PartyPic.Controllers
 {
@@ -35,6 +38,26 @@ namespace PartyPic.Controllers
             };
 
             return ExecuteMethod<LoginController, LoginApiResponse, LoginReadtDTO>(() => _userRepository.Login(loginRequest));
+        }
+
+        [HttpDelete]
+        [Authorize]
+        public ActionResult LogOut()
+        {
+            var currentUserCookie = HttpContext.Request.Cookies["AppSessionId"];
+
+            HttpContext.Response.Cookies.Delete("AppSessionId");
+
+            var cookieOptions = new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(-10)
+            };
+
+            HttpContext.Response.Cookies.Append("AppSessionId", "", cookieOptions);
+
+            HttpContext.Items["User"] = null;
+
+            return ExecuteMethod<LoginController>(() => Ok());
         }
     }
 }

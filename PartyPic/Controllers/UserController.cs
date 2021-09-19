@@ -28,11 +28,13 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult GetAllUsers()
         {
             return ExecuteMethod<UserController, GetAllUsersApiResponse, AllUsersResponse>(() =>_userRepository.GetAllUsers());
         }
 
+        [Authorize]
         [HttpGet]
         [Route("~/api/users/venueUsers")]
         public ActionResult GetAllVenueUsers()
@@ -40,6 +42,7 @@ namespace PartyPic.Controllers
             return ExecuteMethod<UserController, GetAllUsersApiResponse, AllUsersResponse>(() => _userRepository.GetAllVenueUsers());
         }
 
+        [Authorize]
         [HttpGet]
         [Route("~/api/users/grid")]
         public ActionResult<UserGrid> GetAllUsersForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
@@ -56,12 +59,14 @@ namespace PartyPic.Controllers
             return ExecuteMethod<UserController, GridUserApiResponse, UserGrid>(() => _userRepository.GetAllUsersForGrid(gridRequest));
         }
 
+        [Authorize]
         [HttpGet("{id}", Name = "GetUserById")]
         public ActionResult<User> GetUserById(int id)
         {
            return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.GetUserById(id));
         }
 
+        [Authorize]
         [HttpPost]
         public ActionResult<User> CreateUser(UserCreateDTO userCreateDTO)
         {
@@ -70,12 +75,14 @@ namespace PartyPic.Controllers
             return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.CreateUser(userModel));
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public ActionResult UpdateUser(int id, UserUpdateDTO userUpdateDto)
         {
             return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.UpdateUser(id, userUpdateDto));
         }
 
+        [Authorize]
         [HttpPatch("{id}")]
         public ActionResult PartialUserUpdate(int id, JsonPatchDocument<UserUpdateDTO> patchDoc)
         {
@@ -98,6 +105,7 @@ namespace PartyPic.Controllers
             return ExecuteMethod<UserController>(() => _userRepository.PartiallyUpdate(id, userToPatch));
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public ActionResult DeleteUser(int id)
         {

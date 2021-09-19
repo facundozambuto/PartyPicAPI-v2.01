@@ -29,6 +29,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult GetAllEvents()
         {
             return ExecuteMethod<EventController, GetAllEventsApiResponse, AllEventsResponse>(() => _eventRepository.GetAllEvents());
@@ -36,6 +37,7 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Route("~/api/events/grid")]
+        [Authorize]
         public ActionResult<EventGrid> GetAllEventsForGrid([FromQuery] int current,
                                                             [FromQuery] int rowCount,
                                                             [FromQuery] string searchPhrase,
@@ -59,12 +61,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet("{id}", Name = "GetEventById")]
+        [Authorize]
         public ActionResult<EventReadDTO> GetEventById(int id)
         {
             return ExecuteMethod<EventController, EventApiResponse, EventReadDTO>(() => _eventRepository.GetEventById(id));
         }
 
         [HttpPost]
+        [Authorize]
         public ActionResult<Event> CreateEvent(EventCreateDTO eventCreateDTO)
         {
             var eventModel = _mapper.Map<Event>(eventCreateDTO);
@@ -73,12 +77,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public ActionResult UpdateEvent(int id, EventUpdateDTO eventUpdateDto)
         {
             return ExecuteMethod<EventController, EventApiResponse, EventReadDTO>(() => _eventRepository.UpdateEvent(id, eventUpdateDto));
         }
 
         [HttpPatch("{id}")]
+        [Authorize]
         public ActionResult PartialEventUpdate(int id, JsonPatchDocument<EventUpdateDTO> patchDoc)
         {
             var eventModelFromRepo = _eventRepository.GetEventById(id);
@@ -101,6 +107,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public ActionResult DeleteEvent(int id)
         {
             return ExecuteMethod<EventController>(() => _eventRepository.DeleteEvent(id));
@@ -108,6 +115,7 @@ namespace PartyPic.Controllers
 
         [HttpPost("{eventId}")]
         [Route("~/api/events/sendInstructions")]
+        [Authorize]
         public ActionResult SendInstructionsByEmail(EventReadDTO evt)
         {
             return ExecuteMethod<EventController>(() => _eventRepository.SendInstructionsByEmail(evt.EventId));

@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using PartyPic.DTOs.Users;
 using PartyPic.Helpers;
 using PartyPic.Models.Common;
@@ -6,7 +8,10 @@ using PartyPic.Models.Exceptions;
 using PartyPic.Models.Users;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace PartyPic.Contracts.Users
@@ -15,11 +20,13 @@ namespace PartyPic.Contracts.Users
     {
         private readonly UserContext _userContext;
         private readonly IMapper _mapper;
+        private readonly IConfiguration _config;
 
-        public SqlUserRepository(UserContext userContext, IMapper mapper)
+        public SqlUserRepository(UserContext userContext, IMapper mapper, IConfiguration config)
         {
             _userContext = userContext;
             _mapper = mapper;
+            _config = config;
         }
 
         public User CreateUser(User user)
@@ -192,11 +199,14 @@ namespace PartyPic.Contracts.Users
                 throw new NotActiveUserException();
             }
 
+            var token = this.GenerateJwtToken(user);
+
             return new LoginReadtDTO
             {
                 Email = user.Email,
                 Name = user.Name,
-                UserId = user.UserId
+                UserId = user.UserId,
+                Token = token
             };
         }
 
@@ -303,6 +313,24 @@ namespace PartyPic.Contracts.Users
                     throw new PropertyIncorrectException();
                 }
             }
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            
+            var key = Encoding.ASCII.GetBytes(_config.GetValue<string>("SecretJWTKey"));
+            
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[] { new Claim("id", user.UserId.ToString()) }),
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            
+            return tokenHandler.WriteToken(token);
         }
     }
 }

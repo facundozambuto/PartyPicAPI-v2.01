@@ -28,6 +28,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult GetAllRoles()
         {
             return ExecuteMethod<RoleController, GetAllRolesApiResponse, AllRolesResponse>(() => _roleRepository.GetAllRoles());
@@ -35,6 +36,7 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Route("~/api/roles/grid")]
+        [Authorize]
         public ActionResult<RoleGrid> GetAllRolesForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
         {
             GridRequest gridRequest = new GridRequest
@@ -50,12 +52,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet("{id}", Name = "GetRoleById")]
+        [Authorize]
         public ActionResult<Role> GetRoleById(int id)
         {
             return ExecuteMethod<RoleController, RoleApiResponse, Role>(() => _roleRepository.GetRoleById(id));
         }
 
         [HttpPost]
+        [Authorize]
         public ActionResult<Role> CreateRole(RoleCreateDTO roleCreateDTO)
         {
             var roleModel = _mapper.Map<Role>(roleCreateDTO);
@@ -64,12 +68,14 @@ namespace PartyPic.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public ActionResult UpdateRole(int id, RoleUpdateDTO roleUpdateDto)
         {
             return ExecuteMethod<RoleController, RoleApiResponse, Role>(() => _roleRepository.UpdateRole(id, roleUpdateDto));
         }
 
         [HttpPatch("{id}")]
+        [Authorize]
         public ActionResult PartialRoleUpdate(int id, JsonPatchDocument<RoleUpdateDTO> patchDoc)
         {
             var roleModelFromRepo = _roleRepository.GetRoleById(id);
@@ -92,6 +98,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public ActionResult DeleteRole(int id)
         {
             return ExecuteMethod<RoleController>(() => _roleRepository.DeleteRole(id));

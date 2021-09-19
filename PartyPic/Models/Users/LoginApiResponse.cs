@@ -7,5 +7,6 @@ namespace PartyPic.Models.Users
         public string Email { get; set; }
         public int UserId { get; set; }
         public string Name { get; set; }
+        public string Token { get; set; }
     }
 }

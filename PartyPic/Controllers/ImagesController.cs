@@ -33,6 +33,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult<IEnumerable<Image>> GetAllImages(int eventId, bool firstRequest, string requestTime)
         {
             var imageItems = _eventImagesRepository.GetAllEventImages(eventId, firstRequest, requestTime);
@@ -42,6 +43,7 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Route("~/api/images/removed")]
+        [Authorize]
         public ActionResult<IEnumerable<Image>> GetAllRemovedImages(int eventId, string requestTime)
         {
             var imageItems = _eventImagesRepository.GetAllRemovedEventImages(eventId, requestTime);
@@ -51,6 +53,7 @@ namespace PartyPic.Controllers
 
 
         [HttpGet("{id}", Name = "GetImageById")]
+        [Authorize]
         public ActionResult<Image> GetImageById(int id)
         {
             var imageItem = _eventImagesRepository.GetImageById(id);
@@ -74,12 +77,13 @@ namespace PartyPic.Controllers
             }
             catch (System.Exception ex)
             {
-                throw ex;
+                throw new UnableToUploadImageException();
             }
         }
 
         [HttpGet("DownloadAlbum", Name = "DownloadAlbum")]
         [Route("~/api/images/download")]
+        [Authorize]
         public async Task<IActionResult> DownloadAlbum(int eventId)
         {
             try
@@ -111,10 +115,11 @@ namespace PartyPic.Controllers
 
                 zipFileMemoryStream.Seek(0, SeekOrigin.Begin);
                 
-                return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");            }
+                return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");            
+            }
             catch (System.Exception ex)
             {
-                throw ex;
+                throw new UnableToDownloadAlbumException();
             }
         }
     }

@@ -13,6 +13,7 @@ using PartyPic.Contracts.Logger;
 using PartyPic.Contracts.Roles;
 using PartyPic.Contracts.Users;
 using PartyPic.Contracts.Venues;
+using PartyPic.Helpers;
 using System;
 
 namespace PartyPic
@@ -89,6 +90,8 @@ namespace PartyPic
             app.UseRouting();
 
             app.UseCors("CorsApi");
+
+            app.UseMiddleware<JwtMiddleware>();
 
             app.UseEndpoints(endpoints =>
             {
