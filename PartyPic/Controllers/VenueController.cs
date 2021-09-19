@@ -18,11 +18,13 @@ namespace PartyPic.Controllers
     {
         private readonly IVenueRepository _venueRepository;
         private readonly IMapper _mapper;
+        private readonly Contracts.Logger.ILoggerManager _logger;
 
-        public VenueController(IVenueRepository venueRepository, IMapper mapper, IConfiguration config) : base(mapper, config)
+        public VenueController(IVenueRepository venueRepository, IMapper mapper, IConfiguration config, Contracts.Logger.ILoggerManager logger) : base(mapper, config, logger)
         {
             _venueRepository = venueRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -55,7 +57,7 @@ namespace PartyPic.Controllers
 
         [HttpGet("{id}", Name = "GetVenueManager")]
         [Route("~/api/venues/venueManager")]
-        public ActionResult<Venue> GetVenueManager([FromQuery] int venueId)
+        public ActionResult<VenueApiResponse> GetVenueManager([FromQuery] int venueId)
         {
             return ExecuteMethod<VenueController, VenueApiResponse, VenueReadDTO>(() => _venueRepository.GetVenueFullData(venueId));
         }

@@ -22,6 +22,8 @@ namespace PartyPic.Profiles.Users
             CreateMap<GridUserApiResponse, UserGrid>();
             CreateMap<UserApiResponse, User>();
             CreateMap<User, UserApiResponse>();
+            CreateMap<LoginReadtDTO, LoginApiResponse>();
+            CreateMap<LoginApiResponse, LoginReadtDTO>();
         }
     }
 }

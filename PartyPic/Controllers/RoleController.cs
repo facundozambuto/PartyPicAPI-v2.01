@@ -18,11 +18,13 @@ namespace PartyPic.Controllers
     {
         private readonly IRoleRepository _roleRepository;
         private readonly IMapper _mapper;
+        private readonly Contracts.Logger.ILoggerManager _logger;
 
-        public RoleController(IRoleRepository roleRepository, IMapper mapper, IConfiguration config) : base(mapper, config)
+        public RoleController(IRoleRepository roleRepository, IMapper mapper, IConfiguration config, Contracts.Logger.ILoggerManager logger) : base(mapper, config, logger)
         {
             _roleRepository = roleRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]

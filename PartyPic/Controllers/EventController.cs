@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PartyPic.Contracts.Events;
+using PartyPic.Contracts.Logger;
 using PartyPic.DTOs.Events;
 using PartyPic.Models.Common;
 using PartyPic.Models.Events;
@@ -18,11 +19,13 @@ namespace PartyPic.Controllers
     {
         private readonly IEventRepository _eventRepository;
         private readonly IMapper _mapper;
+        private readonly Contracts.Logger.ILoggerManager _logger;
 
-        public EventController(IEventRepository userRepository, IMapper mapper, IConfiguration config) : base(mapper, config)
+        public EventController(IEventRepository eventRepository, IMapper mapper, IConfiguration config, ILoggerManager logger) : base(mapper, config, logger)
         {
-            _eventRepository = userRepository;
+            _eventRepository = eventRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -33,7 +36,13 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Route("~/api/events/grid")]
-        public ActionResult<EventGrid> GetAllEventsForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
+        public ActionResult<EventGrid> GetAllEventsForGrid([FromQuery] int current,
+                                                            [FromQuery] int rowCount,
+                                                            [FromQuery] string searchPhrase,
+                                                            [FromQuery] string sortBy,
+                                                            [FromQuery] string orderBy,
+                                                            [FromQuery] string eventId,
+                                                            [FromQuery] string venueId)
         {
             GridRequest gridRequest = new GridRequest
             {
@@ -41,7 +50,9 @@ namespace PartyPic.Controllers
                 RowCount = rowCount,
                 SearchPhrase = searchPhrase,
                 SortBy = sortBy,
-                OrderBy = orderBy
+                OrderBy = orderBy,
+                EventId = eventId,
+                VenueId = venueId
             };
 
             return ExecuteMethod<EventController, GridEventApiResponse, EventGrid>(() => _eventRepository.GetAllEventsForGrid(gridRequest));

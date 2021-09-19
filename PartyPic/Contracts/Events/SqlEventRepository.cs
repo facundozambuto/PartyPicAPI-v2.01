@@ -227,6 +227,16 @@ namespace PartyPic.Contracts.Events
                 }
             }
 
+            if (!string.IsNullOrEmpty(gridRequest.VenueId))
+            {
+                events = events.Where(ev => ev.VenueId == Convert.ToInt32(gridRequest.VenueId)).ToList();
+            }
+
+            if (!string.IsNullOrEmpty(gridRequest.EventId))
+            {
+                events = events.FindAll(ev => ev.EventId == Convert.ToInt32(gridRequest.EventId));
+            }
+
             var eventGrid = new EventGrid
             {
                 Rows = events,

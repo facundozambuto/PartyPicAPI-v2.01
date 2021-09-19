@@ -7,5 +7,7 @@
         public string OrderBy { get; set; }
         public string SortBy { get; set; }
         public string SearchPhrase { get; set; }
+        public string EventId { get; set; }
+        public string VenueId { get; set; }
     }
 }

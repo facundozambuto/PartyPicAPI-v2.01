@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using PartyPic.Contracts.Logger;
 using PartyPic.Models.Common;
 using System;
 using System.Collections.Generic;
@@ -11,11 +12,13 @@ namespace PartyPic.Controllers
     {
         private readonly IMapper _mapper;
         private readonly IConfiguration _config;
+        private readonly ILoggerManager _logger;
 
-        public PartyPicControllerBase(IMapper mapper, IConfiguration config)
+        public PartyPicControllerBase(IMapper mapper, IConfiguration config, ILoggerManager logger)
         {
             _mapper = mapper;
             _config = config;
+            _logger = logger;
         }
 
         protected ActionResult ExecuteMethod<T, TApiOutput, TOutput>(Func<TOutput> method, Action validate = null)
@@ -60,7 +63,7 @@ namespace PartyPic.Controllers
 
         protected ActionResult ProcessError<T>(Exception exception, string errorMessage)
         {
-            //Logger.Instance.Error<T>(errorMessage, exception);
+            _logger.LogError(errorMessage, exception);
 
             var errorCode = exception.GetType().Name;
 

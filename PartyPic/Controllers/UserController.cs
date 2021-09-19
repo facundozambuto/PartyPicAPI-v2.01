@@ -18,11 +18,13 @@ namespace PartyPic.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
+        private readonly Contracts.Logger.ILoggerManager _logger;
 
-        public UserController(IUserRepository userRepository, IMapper mapper, IConfiguration config) : base(mapper, config)
+        public UserController(IUserRepository userRepository, IMapper mapper, IConfiguration config, Contracts.Logger.ILoggerManager logger) : base(mapper, config, logger)
         {
             _userRepository = userRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]

@@ -9,6 +9,7 @@ using Newtonsoft.Json.Serialization;
 using PartyPic.Contracts.Categories;
 using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
+using PartyPic.Contracts.Logger;
 using PartyPic.Contracts.Roles;
 using PartyPic.Contracts.Users;
 using PartyPic.Contracts.Venues;
@@ -48,6 +49,8 @@ namespace PartyPic
             services.AddControllers().AddNewtonsoftJson(s => {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
+
+            services.AddSingleton<ILoggerManager, Contracts.Logger.LoggerManager>();
 
             //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

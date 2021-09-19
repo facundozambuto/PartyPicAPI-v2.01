@@ -173,6 +173,33 @@ namespace PartyPic.Contracts.Users
             return userGrid;
         }
 
+        public LoginReadtDTO Login(LoginRequest loginRequest)
+        {
+            if (string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
+            {
+                throw new PropertyIncorrectException();
+            }
+
+            var user = _userContext.Users.FirstOrDefault(user => user.Email == loginRequest.Email && user.Password == loginRequest.Password);
+
+            if (user == null)
+            {
+                throw new NotUserFoundException();
+            }
+
+            if (!user.IsActive)
+            {
+                throw new NotActiveUserException();
+            }
+
+            return new LoginReadtDTO
+            {
+                Email = user.Email,
+                Name = user.Name,
+                UserId = user.UserId
+            };
+        }
+
         private void ThrowExceptionIfArgumentIsNull(User user)
         {
             if (user == null)

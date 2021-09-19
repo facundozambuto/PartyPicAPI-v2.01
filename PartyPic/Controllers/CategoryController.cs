@@ -18,11 +18,13 @@ namespace PartyPic.Controllers
     {
         private readonly ICategoryRespository _categoryRepository;
         private readonly IMapper _mapper;
+        private readonly Contracts.Logger.ILoggerManager _logger;
 
-        public CategoryController(ICategoryRespository categoryRepository, IMapper mapper, IConfiguration config) : base(mapper, config)
+        public CategoryController(ICategoryRespository categoryRepository, IMapper mapper, IConfiguration config, Contracts.Logger.ILoggerManager logger) : base(mapper, config, logger)
         {
             _categoryRepository = categoryRepository;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpGet]
