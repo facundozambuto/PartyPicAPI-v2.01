@@ -51,17 +51,17 @@ namespace PartyPic.Controllers
             return ExecuteMethod<VenueController, GridVenueApiResponse, VenueReadDTOGrid>(() => _venueRepository.GetAllVenuesForGrid(gridRequest));
         }
 
-        [HttpGet("{id}", Name = "GetVenueById")]
+        [HttpGet("{venueId}", Name = "GetVenueById")]
         [Authorize]
         public ActionResult<Venue> GetVenueById(int venueId)
         {
             return ExecuteMethod<VenueController, VenueApiResponse, Venue>(() => _venueRepository.GetVenueById(venueId));
         }
 
-        [HttpGet("{id}", Name = "GetVenueManager")]
-        [Route("~/api/venues/venueManager")]
+        [HttpGet("venueManager/{venueId}", Name = "GetVenueManager")]
+        [Route("~/api/venues/")]
         [Authorize]
-        public ActionResult<VenueApiResponse> GetVenueManager([FromQuery] int venueId)
+        public ActionResult<VenueApiResponse> GetVenueManager(int venueId)
         {
             return ExecuteMethod<VenueController, VenueApiResponse, VenueReadDTO>(() => _venueRepository.GetVenueFullData(venueId));
         }
@@ -75,14 +75,14 @@ namespace PartyPic.Controllers
             return ExecuteMethod<VenueController, VenueApiResponse, Venue>(() => _venueRepository.CreateVenue(venueModel));
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("{venueId}")]
         [Authorize]
-        public ActionResult UpdateVenue(int id, VenueUpdateDTO venueUpdateDto)
+        public ActionResult UpdateVenue(int venueId, VenueUpdateDTO venueUpdateDto)
         {
-            return ExecuteMethod<VenueController, VenueApiResponse, Venue>(() => _venueRepository.UpdateVenue(id, venueUpdateDto));
+            return ExecuteMethod<VenueController, VenueApiResponse, Venue>(() => _venueRepository.UpdateVenue(venueId, venueUpdateDto));
         }
 
-        [HttpPatch("{id}")]
+        [HttpPatch("{venueId}")]
         [Authorize]
         public ActionResult PartialVenueUpdate(int venueId, JsonPatchDocument<VenueUpdateDTO> patchDoc)
         {
@@ -105,7 +105,7 @@ namespace PartyPic.Controllers
             return ExecuteMethod<VenueController>(() => _venueRepository.PartiallyUpdate(venueId, venueToPatch));
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("{venueId}")]
         [Authorize]
         public ActionResult DeleteVenue(int venueId)
         {
