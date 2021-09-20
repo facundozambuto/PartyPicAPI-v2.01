@@ -254,22 +254,22 @@ namespace PartyPic.Contracts.Events
 
             var venue = _venueContext.Venues.FirstOrDefault(v => v.VenueId == evt.VenueId);
 
-            var userName = _userContext.Users.FirstOrDefault(u => u.UserId == venue.UserId);
+            var user = _userContext.Users.FirstOrDefault(u => u.UserId == venue.UserId);
 
             MimeMessage message = new MimeMessage();
 
-            MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("emailFromAdmin"));
+            MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("EmailFromAdmin"));
             
             message.From.Add(from);
 
-            MailboxAddress to = new MailboxAddress(userName.Name, "facundozambuto@gmail.com");
+            MailboxAddress to = new MailboxAddress(user.Name, user.Email);
 
             message.To.Add(to);
 
             message.Subject = _config.GetValue<string>("EmailSubject");
 
             BodyBuilder bodyBuilder = new BodyBuilder();
-            bodyBuilder.HtmlBody = _config.GetValue<string>("emailTemplate").Replace("***eventName***", evt.Name).Replace("***qrCode***", evt.QRCode).Replace("***eventCode***", evt.Code);
+            bodyBuilder.HtmlBody = _config.GetValue<string>("EmailTemplate").Replace("***eventName***", evt.Name).Replace("***qrCode***", evt.QRCode).Replace("***eventCode***", evt.Code);
 
             message.Body = bodyBuilder.ToMessageBody();
 
@@ -288,7 +288,7 @@ namespace PartyPic.Contracts.Events
 
         public EventReadDTO GetEventByEventCode(string eventCode)
         {
-            var retrievedEvent = _eventContext.Events.AsNoTracking().FirstOrDefault(ev => ev.Code == eventCode);
+            var retrievedEvent = _eventContext.Events.AsNoTracking().FirstOrDefault(ev => ev.Code.ToLower() == eventCode.ToLower());
 
             if (retrievedEvent == null)
             {

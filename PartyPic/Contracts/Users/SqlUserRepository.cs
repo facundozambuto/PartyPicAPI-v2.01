@@ -1,6 +1,9 @@
 ﻿using AutoMapper;
+using MailKit.Net.Smtp;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using MimeKit;
 using PartyPic.DTOs.Users;
 using PartyPic.Helpers;
 using PartyPic.Models.Common;
@@ -73,7 +76,7 @@ namespace PartyPic.Contracts.Users
         public void DeleteUser(int id)
         {
             var user = this.GetUserById(id);
-            
+
             if (user == null)
             {
                 throw new NotUserFoundException();
@@ -208,6 +211,50 @@ namespace PartyPic.Contracts.Users
                 UserId = user.UserId,
                 Token = token
             };
+        }
+
+        public void RecoverPassword(string email)
+        {
+            var user = _userContext.Users.FirstOrDefault(u => u.Email == email);
+
+            if (user == null)
+            {
+                throw new NotUserFoundException();
+            }
+
+            if (!user.IsActive)
+            {
+                throw new NotActiveUserException();
+            }
+
+            MimeMessage message = new MimeMessage();
+
+            MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("EmailFromAdmin"));
+
+            message.From.Add(from);
+
+            MailboxAddress to = new MailboxAddress(user.Name, user.Email);
+
+            message.To.Add(to);
+
+            message.Subject = _config.GetValue<string>("RecoverPasswordEmailSubject");
+
+            BodyBuilder bodyBuilder = new BodyBuilder();
+            bodyBuilder.HtmlBody = _config.GetValue<string>("RecoverPasswordEmailTemplate").Replace("***userEmail***", user.Email).Replace("***userPassword***", user.Password);
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            foreach (var body in message.BodyParts.OfType<TextPart>())
+                body.ContentTransferEncoding = ContentEncoding.Base64;
+
+            SmtpClient client = new SmtpClient();
+            client.CheckCertificateRevocation = false;
+            client.Connect(_config.GetValue<string>("SMTPServer"), 2525, MailKit.Security.SecureSocketOptions.StartTls);
+            client.Authenticate(_config.GetValue<string>("SMTPUser"), _config.GetValue<string>("SMTPPassword"));
+
+            client.Send(message);
+            client.Disconnect(true);
+            client.Dispose();
         }
 
         private void ThrowExceptionIfArgumentIsNull(User user)

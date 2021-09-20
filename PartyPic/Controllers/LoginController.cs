@@ -13,7 +13,6 @@ using System;
 namespace PartyPic.Controllers
 {
     [EnableCors("CorsApi")]
-    [Route("api/login")]
     [ApiController]
     public class LoginController : PartyPicControllerBase
     {
@@ -29,6 +28,7 @@ namespace PartyPic.Controllers
         }
 
         [HttpGet]
+        [Route("api/login")]
         public ActionResult<LoginApiResponse> LoginUser([FromQuery] string email, [FromQuery] string password)
         {
             var loginRequest = new LoginRequest
@@ -42,6 +42,7 @@ namespace PartyPic.Controllers
 
         [HttpDelete]
         [Authorize]
+        [Route("api/login")]
         public ActionResult LogOut()
         {
             var currentUserCookie = HttpContext.Request.Cookies["AppSessionId"];
@@ -58,6 +59,13 @@ namespace PartyPic.Controllers
             HttpContext.Items["User"] = null;
 
             return ExecuteMethod<LoginController>(() => Ok());
+        }
+
+        [HttpGet]
+        [Route("api/passwordRecover")]
+        public ActionResult RecoverPassword([FromQuery] string email)
+        {
+            return ExecuteMethod<LoginController>(() => _userRepository.RecoverPassword(email));
         }
     }
 }

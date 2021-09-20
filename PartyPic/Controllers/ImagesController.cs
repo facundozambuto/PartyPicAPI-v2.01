@@ -83,7 +83,6 @@ namespace PartyPic.Controllers
 
         [HttpGet("DownloadAlbum", Name = "DownloadAlbum")]
         [Route("~/api/images/download")]
-        [Authorize]
         public async Task<IActionResult> DownloadAlbum(int eventId)
         {
             try
@@ -118,6 +117,47 @@ namespace PartyPic.Controllers
                 return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");            
             }
             catch (System.Exception ex)
+            {
+                throw new UnableToDownloadAlbumException();
+            }
+        }
+
+        [HttpGet("DownloadAlbum", Name = "DownloadAlbum")]
+        [Route("~/api/images/downloadByEventCode")]
+        public async Task<IActionResult> DownloadAlbumByEventCode([FromQuery] string eventCode)
+        {
+            try
+            {
+                var evt = _eventRepository.GetEventByEventCode(eventCode);
+
+                if (evt == null)
+                {
+                    throw new NotEventFoundException();
+                }
+
+                var filePaths = Directory.GetFiles(Path.Combine(_config.GetValue<string>("DirectoryEventImagesPath") + evt.EventId));
+
+                var zipFileMemoryStream = new MemoryStream();
+
+                using (ZipArchive archive = new ZipArchive(zipFileMemoryStream, ZipArchiveMode.Update, leaveOpen: true))
+                {
+                    foreach (var filePath in filePaths)
+                    {
+                        var fileName = Path.GetFileName(filePath);
+                        var entry = archive.CreateEntry(fileName);
+                        using (var entryStream = entry.Open())
+                        using (var fileStream = System.IO.File.OpenRead(filePath))
+                        {
+                            await fileStream.CopyToAsync(entryStream);
+                        }
+                    }
+                }
+
+                zipFileMemoryStream.Seek(0, SeekOrigin.Begin);
+
+                return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");
+            }
+            catch (System.Exception)
             {
                 throw new UnableToDownloadAlbumException();
             }

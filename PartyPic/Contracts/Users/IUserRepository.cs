@@ -1,4 +1,5 @@
-﻿using PartyPic.DTOs.Users;
+﻿using Microsoft.AspNetCore.Mvc;
+using PartyPic.DTOs.Users;
 using PartyPic.Models.Common;
 using PartyPic.Models.Users;
 
@@ -16,5 +17,6 @@ namespace PartyPic.Contracts.Users
         UserGrid GetAllUsersForGrid(GridRequest gridRequest);
         AllUsersResponse GetAllVenueUsers();
         LoginReadtDTO Login(LoginRequest loginRequest);
+        void RecoverPassword(string email);
     }
 }
