@@ -60,10 +60,10 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
-        [HttpGet("{id}", Name = "GetUserById")]
-        public ActionResult<User> GetUserById(int id)
+        [HttpGet("{userId}", Name = "GetUserById")]
+        public ActionResult<User> GetUserById(int userId)
         {
-           return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.GetUserById(id));
+           return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.GetUserById(userId));
         }
 
         [Authorize]
@@ -83,10 +83,10 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
-        [HttpPatch("{id}")]
-        public ActionResult PartialUserUpdate(int id, JsonPatchDocument<UserUpdateDTO> patchDoc)
+        [HttpPatch("{userId}")]
+        public ActionResult PartialUserUpdate(int userId, JsonPatchDocument<UserUpdateDTO> patchDoc)
         {
-            var userModelFromRepo = _userRepository.GetUserById(id);
+            var userModelFromRepo = _userRepository.GetUserById(userId);
             if (userModelFromRepo == null)
             {
                 return ExecuteMethod<UserController>(() => new NotUserFoundException());
@@ -102,14 +102,30 @@ namespace PartyPic.Controllers
 
             _mapper.Map(userToPatch, userModelFromRepo);
 
-            return ExecuteMethod<UserController>(() => _userRepository.PartiallyUpdate(id, userToPatch));
+            return ExecuteMethod<UserController>(() => _userRepository.PartiallyUpdate(userId, userToPatch));
         }
 
         [Authorize]
-        [HttpDelete("{id}")]
-        public ActionResult DeleteUser(int id)
+        [HttpDelete("{userId}")]
+        public ActionResult DeleteUser(int userId)
         {
-            return ExecuteMethod<UserController>(() => _userRepository.DeleteUser(id));
+            return ExecuteMethod<UserController>(() => _userRepository.DeleteUser(userId));
+        }
+
+        [Authorize]
+        [HttpPut("currentUser/{userId}", Name = "UpdateCurrentUser")]
+        [Route("~/api/users/")]
+        public ActionResult UpdateCurrentUser(int userId, UserUpdateDTO userUpdateDto)
+        {
+            return ExecuteMethod<UserController, UserApiResponse, User>(() => _userRepository.UpdateCurrentUser(userId, userUpdateDto));
+        }
+
+        [Authorize]
+        [HttpPost("passwordUpdate/", Name = "ChangeUserPassword")]
+        [Route("~/api/users/")]
+        public ActionResult ChangeUserPassword([FromBody] ChangePasswordRequest changePasswordRequest)
+        {
+            return ExecuteMethod<UserController>(() => _userRepository.ChangeUserPassword(changePasswordRequest));
         }
     }
 }

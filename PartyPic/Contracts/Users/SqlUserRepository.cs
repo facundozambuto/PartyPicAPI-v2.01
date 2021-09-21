@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using MailKit.Net.Smtp;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
@@ -15,7 +14,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace PartyPic.Contracts.Users
 {
@@ -56,9 +54,9 @@ namespace PartyPic.Contracts.Users
             };
         }
 
-        public User GetUserById(int id)
+        public User GetUserById(int userId)
         {
-            var user = _userContext.Users.FirstOrDefault(user => user.UserId == id);
+            var user = _userContext.Users.FirstOrDefault(user => user.UserId == userId);
 
             if (user == null)
             {
@@ -73,9 +71,9 @@ namespace PartyPic.Contracts.Users
             return (_userContext.SaveChanges() >= 0);
         }
 
-        public void DeleteUser(int id)
+        public void DeleteUser(int userId)
         {
-            var user = this.GetUserById(id);
+            var user = this.GetUserById(userId);
 
             if (user == null)
             {
@@ -87,18 +85,18 @@ namespace PartyPic.Contracts.Users
             this.SaveChanges();
         }
 
-        public void PartiallyUpdate(int id, UserUpdateDTO user)
+        public void PartiallyUpdate(int userId, UserUpdateDTO user)
         {
-            this.UpdateUser(id, user);
+            this.UpdateUser(userId, user);
 
             this.SaveChanges();
         }
 
-        public User UpdateUser(int id, UserUpdateDTO userUpdateDto)
+        public User UpdateUser(int userId, UserUpdateDTO userUpdateDto)
         {
             var user = _mapper.Map<User>(userUpdateDto);
 
-            var retrievedUser = this.GetUserById(id);
+            var retrievedUser = this.GetUserById(userId);
 
             if (retrievedUser == null)
             {
@@ -106,8 +104,8 @@ namespace PartyPic.Contracts.Users
             }
 
             this.ThrowExceptionIfArgumentIsNull(user);
-            this.ThrowExceptionIfPropertyAlreadyExists(user, false, id);
-            this.ThrowExceptionIfPropertyIsIncorrect(user, false, id);
+            this.ThrowExceptionIfPropertyAlreadyExists(user, false, userId);
+            this.ThrowExceptionIfPropertyIsIncorrect(user, false, userId);
 
             _mapper.Map(userUpdateDto, retrievedUser);
 
@@ -115,7 +113,34 @@ namespace PartyPic.Contracts.Users
 
             this.SaveChanges();
 
-            return this.GetUserById(id);
+            return this.GetUserById(userId);
+        }
+
+        public User UpdateCurrentUser(int userId, UserUpdateDTO userUpdateDto)
+        {
+            var user = _mapper.Map<User>(userUpdateDto);
+
+            var retrievedUser = this.GetUserById(userId);
+
+            if (retrievedUser == null)
+            {
+                throw new NotUserFoundException();
+            }
+
+            this.ThrowExceptionIfPropertyAlreadyExists(user, false, userId);
+
+            _mapper.Map(userUpdateDto, retrievedUser);
+
+            _userContext.Users.Update(retrievedUser);
+
+            _userContext.Entry(retrievedUser).Property(x => x.CreatedDatetime).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.RoleId).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.IsActive).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.Password).IsModified = false;
+
+            this.SaveChanges();
+
+            return this.GetUserById(userId);
         }
 
         public AllUsersResponse GetAllVenueUsers()
@@ -211,6 +236,38 @@ namespace PartyPic.Contracts.Users
                 UserId = user.UserId,
                 Token = token
             };
+        }
+
+        public void ChangeUserPassword(ChangePasswordRequest changePasswordRequest)
+        {
+            var retrievedUser = this.GetUserById(changePasswordRequest.UserId);
+
+            if (retrievedUser == null)
+            {
+                throw new NotUserFoundException();
+            };
+
+            if (string.IsNullOrEmpty(changePasswordRequest.Password))
+            {
+                throw new PropertyIncorrectException();
+            }
+
+            retrievedUser.Password = changePasswordRequest.Password;
+
+            _userContext.Users.Update(retrievedUser);
+
+            _userContext.Entry(retrievedUser).Property(x => x.CreatedDatetime).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.RoleId).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.IsActive).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.Name).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.Address).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.Phone).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.MobilePhone).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.Cuil).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.Email).IsModified = false;
+            _userContext.Entry(retrievedUser).Property(x => x.UserId).IsModified = false;
+
+            this.SaveChanges();
         }
 
         public void RecoverPassword(string email)
@@ -342,13 +399,6 @@ namespace PartyPic.Contracts.Users
                 }
             }
             catch (Exception)
-            {
-                throw new PropertyIncorrectException();
-            }
-
-            var passwordRegex = new Regex(@"^(?=.{8,16}$)(?=.*?[a-z])(?=.*?[A-Z])(?=.*?[0-9]).*$");
-
-            if (!passwordRegex.IsMatch(user.Password))
             {
                 throw new PropertyIncorrectException();
             }
