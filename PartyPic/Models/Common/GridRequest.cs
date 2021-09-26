@@ -9,5 +9,6 @@
         public string SearchPhrase { get; set; }
         public string EventId { get; set; }
         public string VenueId { get; set; }
+        public string UserId { get; set; }
     }
 }

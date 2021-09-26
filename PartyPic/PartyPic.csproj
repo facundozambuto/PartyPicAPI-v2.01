@@ -6,6 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Profiles\BannedUsers\**" />
+    <Content Remove="Profiles\BannedUsers\**" />
+    <EmbeddedResource Remove="Profiles\BannedUsers\**" />
+    <None Remove="Profiles\BannedUsers\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
     <PackageReference Include="MailKit" Version="2.13.0" />
@@ -26,7 +33,6 @@
   <ItemGroup>
     <Folder Include="Config\" />
     <Folder Include="Contracts\Common\" />
-    <Folder Include="Profiles\BannedUsers\" />
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

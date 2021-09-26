@@ -7,6 +7,7 @@ using PartyPic.Contracts.Images;
 using PartyPic.DTOs.Images;
 using PartyPic.Models.Exceptions;
 using PartyPic.Models.Images;
+using PartyPic.Models.Users;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -17,14 +18,15 @@ namespace PartyPic.Controllers
     [EnableCors("CorsApi")]
     [Route("api/images")]
     [ApiController]
-    public class ImagesController : ControllerBase
+    public class ImagesController : PartyPicControllerBase
     {
         private readonly IImagesRepository _eventImagesRepository;
         private readonly IMapper _mapper;
         private readonly IConfiguration _config;
         private readonly IEventRepository _eventRepository;
+        private readonly Contracts.Logger.ILoggerManager _logger;
 
-        public ImagesController(IImagesRepository eventImagesRepository, IMapper mapper, IConfiguration config, IEventRepository eventRepository)
+        public ImagesController(IImagesRepository eventImagesRepository, IMapper mapper, IConfiguration config, IEventRepository eventRepository, Contracts.Logger.ILoggerManager logger) : base(mapper, config, logger)
         {
             _eventImagesRepository = eventImagesRepository;
             _mapper = mapper;
@@ -50,7 +52,6 @@ namespace PartyPic.Controllers
 
             return Ok(_mapper.Map<IEnumerable<ImageReadDTO>>(imageItems));
         }
-
 
         [HttpGet("{id}", Name = "GetImageById")]
         [Authorize]
@@ -78,6 +79,25 @@ namespace PartyPic.Controllers
             catch (System.Exception ex)
             {
                 throw new UnableToUploadImageException();
+            }
+        }
+
+        [HttpPost("DeleteImage", Name = "DeleteImage")]
+        [Route("~/api/images/delete")]
+        [Authorize]
+        public ActionResult DeleteImage(DeleteImageRequest deleteImageRequest)
+        {
+            try
+            {
+                var user = (User)HttpContext.Items["User"];
+
+                deleteImageRequest.UserId = user.UserId;
+
+                return ExecuteMethod<DeleteImageRequest>(() => _eventImagesRepository.DeleteImage(deleteImageRequest));
+            }
+            catch (System.Exception ex)
+            {
+                throw new UnableToDeleteImageException();
             }
         }
 

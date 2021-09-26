@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json.Serialization;
+using PartyPic.Contracts.BannedProfiles;
 using PartyPic.Contracts.Categories;
 using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
@@ -47,11 +48,14 @@ namespace PartyPic
             services.AddDbContext<RoleContext>(opt => opt.UseSqlServer
                 (_configuration.GetConnectionString("PartyPicConnection")));
 
+            services.AddDbContext<BannedProfileContext>(opt => opt.UseSqlServer
+                (_configuration.GetConnectionString("PartyPicConnection")));
+
             services.AddControllers().AddNewtonsoftJson(s => {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
 
-            services.AddSingleton<ILoggerManager, Contracts.Logger.LoggerManager>();
+            services.AddSingleton<ILoggerManager, LoggerManager>();
 
             //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -65,6 +69,7 @@ namespace PartyPic
             services.AddScoped<IVenueRepository, SqlVenueRepository>();
             services.AddScoped<ICategoryRespository, SqlCategoryRepository>();
             services.AddScoped<IRoleRepository, SqlRoleRepository>();
+            services.AddScoped<IBannedProfileRepository, SqlBannedProfileRepository>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
