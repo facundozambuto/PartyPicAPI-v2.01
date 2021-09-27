@@ -57,6 +57,8 @@ namespace PartyPic
 
             services.AddSingleton<ILoggerManager, LoggerManager>();
 
+            services.AddHttpContextAccessor();
+
             //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             //services.AddSwaggerGen(c => {

@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Filters;
 using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Users;
 using PartyPic.DTOs.BannedProfiles;
@@ -7,6 +9,7 @@ using PartyPic.Models.BannedProfile;
 using PartyPic.Models.BannedProfiles;
 using PartyPic.Models.Common;
 using PartyPic.Models.Exceptions;
+using PartyPic.Models.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,14 +23,20 @@ namespace PartyPic.Contracts.BannedProfiles
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
         private readonly Contracts.Logger.ILoggerManager _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SqlBannedProfileRepository(BannedProfileContext bannedProfileContext, IUserRepository userRepository, IEventRepository eventRepository, IMapper mapper, Contracts.Logger.ILoggerManager logger)
+        public SqlBannedProfileRepository(BannedProfileContext bannedProfileContext, 
+                                         IUserRepository userRepository, IEventRepository eventRepository, 
+                                         IMapper mapper, 
+                                         Contracts.Logger.ILoggerManager logger,
+                                         IHttpContextAccessor httpContextAccessor)
         {
             _bannedProfileContext = bannedProfileContext;
             _eventRepository = eventRepository;
             _mapper = mapper;
             _logger = logger;
             _userRepository = userRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public BannedProfile BlockProfile(BannedProfile bannedProfile)
@@ -45,32 +54,16 @@ namespace PartyPic.Contracts.BannedProfiles
             return addedBannedProfile;
         }
 
-        private void ThrowExceptionIfArgumentIsNull(BannedProfile bannedProfile)
-        {
-            if (bannedProfile == null)
-            {
-                throw new ArgumentNullException(nameof(bannedProfile));
-            }
-
-            if (bannedProfile.EventId == 0)
-            {
-                throw new ArgumentNullException(nameof(bannedProfile.EventId));
-            }
-
-            if (bannedProfile.UserId == 0)
-            {
-                throw new ArgumentNullException(nameof(bannedProfile.UserId));
-            }
-
-            if (string.IsNullOrEmpty(bannedProfile.ProfileId))
-            {
-                throw new ArgumentNullException(nameof(bannedProfile.ProfileId));
-            }
-        }
-
         public AllBannedProfileResponse GetAllBannedProfiles()
         {
+            var user = (User)_httpContextAccessor.HttpContext.Items["User"];
+
             var bannedProfiles = _mapper.Map<List<BannedProfileReadDTO>>(_bannedProfileContext.BannedProfiles);
+
+            if (user.RoleId != 1)
+            {
+                bannedProfiles = bannedProfiles.Where(bp => bp.UserId == user.UserId).ToList();
+            }
 
             return new AllBannedProfileResponse
             {
@@ -83,6 +76,13 @@ namespace PartyPic.Contracts.BannedProfiles
             var bannedProfileRows = new List<BannedProfile>();
 
             bannedProfileRows = _bannedProfileContext.BannedProfiles.ToList();
+
+            var user = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            if (user.RoleId != 1)
+            {
+                bannedProfileRows = bannedProfileRows.Where(bp => bp.UserId == user.UserId).ToList();
+            }
 
             if (!string.IsNullOrEmpty(gridRequest.SearchPhrase))
             {
@@ -135,11 +135,11 @@ namespace PartyPic.Contracts.BannedProfiles
                     bp.EventName = retrievedEvent.Name;
                 }
 
-                var user = users.FirstOrDefault(u => u.UserId == bp.UserId);
+                var retrievedUser = users.FirstOrDefault(u => u.UserId == bp.UserId);
 
-                if (user != null)
+                if (retrievedUser != null)
                 {
-                    bp.UserName = user.Name;
+                    bp.UserName = retrievedUser.Name;
                 }
             }
 
@@ -206,6 +206,29 @@ namespace PartyPic.Contracts.BannedProfiles
             _bannedProfileContext.BannedProfiles.Remove(bannedProfile);
 
             this.SaveChanges();
+        }
+
+        private void ThrowExceptionIfArgumentIsNull(BannedProfile bannedProfile)
+        {
+            if (bannedProfile == null)
+            {
+                throw new ArgumentNullException(nameof(bannedProfile));
+            }
+
+            if (bannedProfile.EventId == 0)
+            {
+                throw new ArgumentNullException(nameof(bannedProfile.EventId));
+            }
+
+            if (bannedProfile.UserId == 0)
+            {
+                throw new ArgumentNullException(nameof(bannedProfile.UserId));
+            }
+
+            if (string.IsNullOrEmpty(bannedProfile.ProfileId))
+            {
+                throw new ArgumentNullException(nameof(bannedProfile.ProfileId));
+            }
         }
     }
 }

@@ -16,6 +16,8 @@ using System.Linq;
 using MailKit.Net.Smtp;
 using MimeKit;
 using PartyPic.Contracts.Users;
+using Microsoft.AspNetCore.Http;
+using PartyPic.Models.Users;
 
 namespace PartyPic.Contracts.Events
 {
@@ -28,6 +30,7 @@ namespace PartyPic.Contracts.Events
         private readonly CategoryContext _categoryContext;
         private readonly ImagesContext _imagesContext;
         private readonly UserContext _userContext;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public SqlEventRepository(
             EventContext eventContext, 
@@ -36,7 +39,8 @@ namespace PartyPic.Contracts.Events
             VenueContext venueContext, 
             CategoryContext categoryContext, 
             ImagesContext imagesContext,
-            UserContext userContext)
+            UserContext userContext,
+            IHttpContextAccessor httpContextAccessor)
         {
             _eventContext = eventContext;
             _mapper = mapper;
@@ -45,11 +49,21 @@ namespace PartyPic.Contracts.Events
             _categoryContext = categoryContext;
             _imagesContext = imagesContext;
             _userContext = userContext;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public AllEventsResponse GetAllEvents()
         {
             var events = _mapper.Map<List<EventReadDTO>>(_eventContext.Events.ToList());
+
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            var venues = _venueContext.Venues.Where(v => v.UserId == currentUser.UserId);
+
+            if (currentUser.UserId != 1 && venues != null)
+            {
+                events = events.Where(ev => venues.Any(v => v.VenueId == ev.VenueId)).ToList();
+            }
 
             foreach (EventReadDTO ev in events)
             {
@@ -174,6 +188,15 @@ namespace PartyPic.Contracts.Events
             var eventRows = new List<Event>();
 
             eventRows = _eventContext.Events.ToList();
+
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            var venues = _venueContext.Venues.Where(v => v.UserId == currentUser.UserId);
+
+            if (currentUser.UserId != 1 && venues != null)
+            {
+                eventRows = eventRows.Where(ev => venues.Any(v => v.VenueId == ev.VenueId)).ToList();
+            }
 
             if (!string.IsNullOrEmpty(gridRequest.SearchPhrase))
             {
