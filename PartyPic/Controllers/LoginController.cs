@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PartyPic.Contracts.Logger;
+using PartyPic.Contracts.SessionLogs;
 using PartyPic.Contracts.Users;
 using PartyPic.DTOs.Users;
 using PartyPic.Models.Users;
@@ -19,12 +20,14 @@ namespace PartyPic.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
         private readonly Contracts.Logger.ILoggerManager _logger;
+        private readonly ISessionLogsRepository _sessionLogsRepository;
 
-        public LoginController(IUserRepository userRepository, IMapper mapper, IConfiguration config, ILoggerManager logger) : base(mapper, config, logger)
+        public LoginController(IUserRepository userRepository, IMapper mapper, IConfiguration config, ILoggerManager logger, ISessionLogsRepository sessionLogsRepository) : base(mapper, config, logger)
         {
             _userRepository = userRepository;
             _mapper = mapper;
             _logger = logger;
+            _sessionLogsRepository = sessionLogsRepository;
         }
 
         [HttpGet]
@@ -46,6 +49,10 @@ namespace PartyPic.Controllers
         public ActionResult LogOut()
         {
             var currentUserCookie = HttpContext.Request.Cookies["AppSessionId"];
+
+            var user = (User)HttpContext.Items["User"];
+
+            _sessionLogsRepository.AddSessionLog(user.UserId, "LOGOUT");
 
             HttpContext.Response.Cookies.Delete("AppSessionId");
 

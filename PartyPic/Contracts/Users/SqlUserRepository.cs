@@ -3,6 +3,7 @@ using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
+using PartyPic.Contracts.SessionLogs;
 using PartyPic.DTOs.Users;
 using PartyPic.Helpers;
 using PartyPic.Models.Common;
@@ -22,12 +23,14 @@ namespace PartyPic.Contracts.Users
         private readonly UserContext _userContext;
         private readonly IMapper _mapper;
         private readonly IConfiguration _config;
+        private readonly ISessionLogsRepository _sessionLogsRepository;
 
-        public SqlUserRepository(UserContext userContext, IMapper mapper, IConfiguration config)
+        public SqlUserRepository(UserContext userContext, IMapper mapper, IConfiguration config, ISessionLogsRepository sessionLogsRepository)
         {
             _userContext = userContext;
             _mapper = mapper;
             _config = config;
+            _sessionLogsRepository = sessionLogsRepository;
         }
 
         public User CreateUser(User user)
@@ -228,6 +231,8 @@ namespace PartyPic.Contracts.Users
             }
 
             var token = this.GenerateJwtToken(user);
+
+            _sessionLogsRepository.AddSessionLog(user.UserId, "LOGIN");
 
             return new LoginReadtDTO
             {

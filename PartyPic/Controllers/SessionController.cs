@@ -30,5 +30,15 @@ namespace PartyPic.Controllers
 
             return ExecuteMethod<SessionController, UserApiResponse, User>(() => user);
         }
+
+        [HttpGet]
+        [Route("~/api/session/logs")]
+        [Authorize]
+        public ActionResult<UserApiResponse> GetSessionLogs()
+        {
+            var user = (User)HttpContext.Items["User"];
+
+            return ExecuteMethod<SessionController, UserApiResponse, User>(() => user);
+        }
     }
 }
