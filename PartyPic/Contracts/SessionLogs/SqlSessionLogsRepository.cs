@@ -1,6 +1,7 @@
 ﻿using PartyPic.Models.SessionLogs;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PartyPic.Contracts.SessionLogs
 {
@@ -28,9 +29,12 @@ namespace PartyPic.Contracts.SessionLogs
             this.SaveChanges();
         }
 
-        public List<SessionLog> GetSessionLogs()
+        public AllSessionLogsResponse GetSessionLogs()
         {
-            throw new System.NotImplementedException();
+            return new AllSessionLogsResponse
+            {
+                SessionLogs = _sessionLogsContext.SessionLogs.ToList()
+            };
         }
 
         public bool SaveChanges()

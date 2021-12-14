@@ -9,7 +9,7 @@ namespace PartyPic.Contracts.Logger
 {
     public class LoggerManager : ILoggerManager
     {
-        private readonly ILog _logger = LogManager.GetLogger(typeof(LoggerManager));
+        private readonly ILog _log4net = LogManager.GetLogger(typeof(LoggerManager));
         public LoggerManager()
         {
             try
@@ -30,38 +30,38 @@ namespace PartyPic.Contracts.Logger
             }
             catch (Exception ex)
             {
-                _logger.Error("Error", ex);
+                _log4net.Error("Error", ex);
             }
         }
 
         public void LogWarning(string message)
         {
-            _logger.Warn(message);
+            _log4net.Warn(message);
         }
 
         public void LogWarning(string message, Exception ex)
         {
-            _logger.Warn(message, ex);
+            _log4net.Warn(message, ex);
         }
 
         public void LogError(string message)
         {
-            _logger.Error(message);
+            _log4net.Error(message);
         }
 
         public void LogError(string message, Exception ex)
         {
-            _logger.Error(message, ex);
+            _log4net.Error(message, ex);
         }
 
         public void LogInformation(string message)
         {
-            _logger.Info(message);
+            _log4net.Info(message);
         }
 
         public void LogInformation(string message, Exception ex)
         {
-            _logger.Info(message, ex);
+            _log4net.Info(message, ex);
         }
     }
 }

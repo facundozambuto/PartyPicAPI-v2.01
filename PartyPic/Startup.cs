@@ -64,12 +64,6 @@ namespace PartyPic
 
             services.AddHttpContextAccessor();
 
-            //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-            //services.AddSwaggerGen(c => {
-            //    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Commander API", Version = "v1" });
-            //});
-
             services.AddScoped<IUserRepository, SqlUserRepository>();
             services.AddScoped<IImagesRepository, SqlImagesRepository>();
             services.AddScoped<IEventRepository, SqlEventRepository>();
