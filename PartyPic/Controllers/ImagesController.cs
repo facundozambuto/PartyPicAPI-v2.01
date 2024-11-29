@@ -68,17 +68,17 @@ namespace PartyPic.Controllers
         }
 
         [HttpPost("UploadImage", Name = "UploadImage")]
-        public ActionResult UploadImage([FromForm] ImageFile uploadImage)
+        public async Task<ActionResult> UploadImageAsync([FromForm] ImageFile uploadImage)
         {
             try
             {
-                _eventImagesRepository.UploadImage(uploadImage);
+                await _eventImagesRepository.UploadImage(uploadImage);
 
                 return Ok();
             }
             catch (System.Exception ex)
             {
-                throw new UnableToUploadImageException();
+                throw;
             }
         }
 
