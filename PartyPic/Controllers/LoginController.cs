@@ -8,7 +8,6 @@ using PartyPic.Contracts.SessionLogs;
 using PartyPic.Contracts.Users;
 using PartyPic.DTOs.Users;
 using PartyPic.Models.Users;
-using RestSharp;
 using System;
 
 namespace PartyPic.Controllers

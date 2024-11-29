@@ -17,6 +17,8 @@ using PartyPic.Contracts.SessionLogs;
 using PartyPic.Contracts.Users;
 using PartyPic.Contracts.Venues;
 using PartyPic.Helpers;
+using PartyPic.ThirdParty;
+using PartyPic.ThirdParty.Impl;
 using System;
 
 namespace PartyPic
@@ -73,6 +75,7 @@ namespace PartyPic
             services.AddScoped<IBannedProfileRepository, SqlBannedProfileRepository>();
             services.AddScoped<IReportsRepository, SqlReportsRepository>();
             services.AddScoped<ISessionLogsRepository, SqlSessionLogsRepository>();
+            services.AddScoped<IBlobStorageManager, BlobStorageManager>();
 
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
