@@ -1,4 +1,7 @@
-﻿using System;
+﻿using PartyPic.Models.Roles;
+using PartyPic.Models.Subscriptions;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace PartyPic.Models.Users
@@ -35,5 +38,7 @@ namespace PartyPic.Models.Users
         [Required]
         [MaxLength(250)]
         public string MobilePhone { get; set; }
+        public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+        public Role Role { get; set; }
     }
 }
