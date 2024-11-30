@@ -11,6 +11,7 @@ using PartyPic.Contracts.Categories;
 using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
 using PartyPic.Contracts.Logger;
+using PartyPic.Contracts.Payments;
 using PartyPic.Contracts.Reports;
 using PartyPic.Contracts.Roles;
 using PartyPic.Contracts.SessionLogs;
@@ -62,6 +63,9 @@ namespace PartyPic
             services.AddDbContext<SubscriptionContext>(opt => opt.UseSqlServer
                 (_configuration.GetConnectionString("PartyPicConnection")));
 
+            services.AddDbContext<PaymentContext>(opt => opt.UseSqlServer
+                (_configuration.GetConnectionString("PartyPicConnection")));
+
             services.AddControllers().AddNewtonsoftJson(s => {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
@@ -80,6 +84,7 @@ namespace PartyPic
             services.AddScoped<IReportsRepository, SqlReportsRepository>();
             services.AddScoped<ISessionLogsRepository, SqlSessionLogsRepository>();
             services.AddScoped<ISubscriptionRespository, SqlSubscriptionRepository>();
+            services.AddScoped<IPaymentRespository, SqlPaymentRepository>();
             services.AddScoped<IBlobStorageManager, BlobStorageManager>();
 
 

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using PartyPic.Models.Payments;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace PartyPic.Models.Events
@@ -25,5 +27,6 @@ namespace PartyPic.Models.Events
         public DateTime? LastRequest { get; set; }
         public DateTime? CreatedDatetime { get; set; }
         public int CategoryId { get; set; }
+        public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }

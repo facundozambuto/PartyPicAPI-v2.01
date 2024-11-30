@@ -1,4 +1,5 @@
-﻿using PartyPic.Models.Roles;
+﻿using PartyPic.Models.Payments;
+using PartyPic.Models.Roles;
 using PartyPic.Models.Subscriptions;
 using System;
 using System.Collections.Generic;
@@ -39,6 +40,6 @@ namespace PartyPic.Models.Users
         [MaxLength(250)]
         public string MobilePhone { get; set; }
         public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
-        public Role Role { get; set; }
+        public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     }
 }
