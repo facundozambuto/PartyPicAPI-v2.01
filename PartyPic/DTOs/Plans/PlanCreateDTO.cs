@@ -1,18 +1,18 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace PartyPic.Models.Roles
+namespace PartyPic.DTOs.Plans
 {
-    [Table("Roles")]
-    public class Role
+    public class PlanCreateDTO
     {
-        [Key]
         [Required]
-        public int RoleId { get; set; }
+        [MaxLength(250)]
+        public string Name { get; set; }
         [Required]
         [MaxLength(250)]
         public string Description { get; set; }
+        [Required]
+        public decimal InitialPrice { get; set; }
         [Required]
         public DateTime CreatedDatetime { get; set; }
     }

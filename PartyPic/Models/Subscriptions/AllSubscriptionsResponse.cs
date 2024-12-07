@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using PartyPic.DTOs.Subscriptions;
+using System.Collections.Generic;
 
 namespace PartyPic.Models.Subscriptions
 {
     public class AllSubscriptionsResponse
     {
-        public List<Subscription> Subscriptions { get; set; }
+        public List<SubscriptionReadDTO> Subscriptions { get; set; }
     }
 }

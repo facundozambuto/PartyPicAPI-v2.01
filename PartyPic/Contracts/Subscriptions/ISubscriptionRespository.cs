@@ -4,15 +4,17 @@ using PartyPic.Models.Common;
 
 namespace PartyPic.Contracts.Subscriptions
 {
-    public interface ISubscriptionRespository
+    public interface ISubscriptionRepository
     {
         AllSubscriptionsResponse GetAllSubscriptions();
         Subscription GetSubscriptionById(int id);
-        Subscription CreateSubscription(Subscription category);
+        SubscriptionReadDTO CreateSubscription(SubscriptionCreateDTO subscription);
         bool SaveChanges();
         void DeleteSubscription(int id);
-        Subscription UpdateSubscription(int id, SubscriptionUpdateDTO category);
-        void PartiallyUpdate(int id, SubscriptionUpdateDTO category);
+        Subscription UpdateSubscription(int id, SubscriptionUpdateDTO subscription);
+        void PartiallyUpdate(int id, SubscriptionUpdateDTO subscription);
         SubscriptionGrid GetAllSubscriptionsForGrid(GridRequest gridRequest);
+        AllSubscriptionsResponse GetAllMySubscriptions();
+        SubscriptionReadDTO ConfirmSubscription(string externalReference);
     }
 }

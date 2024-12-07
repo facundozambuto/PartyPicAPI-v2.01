@@ -12,6 +12,7 @@ using PartyPic.Contracts.Events;
 using PartyPic.Contracts.Images;
 using PartyPic.Contracts.Logger;
 using PartyPic.Contracts.Payments;
+using PartyPic.Contracts.Plans;
 using PartyPic.Contracts.Reports;
 using PartyPic.Contracts.Roles;
 using PartyPic.Contracts.SessionLogs;
@@ -66,6 +67,9 @@ namespace PartyPic
             services.AddDbContext<PaymentContext>(opt => opt.UseSqlServer
                 (_configuration.GetConnectionString("PartyPicConnection")));
 
+            services.AddDbContext<PlanContext>(opt => opt.UseSqlServer
+                (_configuration.GetConnectionString("PartyPicConnection")));
+
             services.AddControllers().AddNewtonsoftJson(s => {
                 s.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             });
@@ -78,14 +82,17 @@ namespace PartyPic
             services.AddScoped<IImagesRepository, SqlImagesRepository>();
             services.AddScoped<IEventRepository, SqlEventRepository>();
             services.AddScoped<IVenueRepository, SqlVenueRepository>();
-            services.AddScoped<ICategoryRespository, SqlCategoryRepository>();
+            services.AddScoped<ICategoryRepository, SqlCategoryRepository>();
             services.AddScoped<IRoleRepository, SqlRoleRepository>();
             services.AddScoped<IBannedProfileRepository, SqlBannedProfileRepository>();
             services.AddScoped<IReportsRepository, SqlReportsRepository>();
             services.AddScoped<ISessionLogsRepository, SqlSessionLogsRepository>();
-            services.AddScoped<ISubscriptionRespository, SqlSubscriptionRepository>();
-            services.AddScoped<IPaymentRespository, SqlPaymentRepository>();
+            services.AddScoped<ISubscriptionRepository, SqlSubscriptionRepository>();
+            services.AddScoped<IPaymentRepository, SqlPaymentRepository>();
+            services.AddScoped<IPlanRepository, SqlPlanRepository>();
             services.AddScoped<IBlobStorageManager, BlobStorageManager>();
+            services.AddScoped<IMercadoPagoManager, MercadoPagoManager>();
+            services.AddScoped<ICurrencyConverter, CurrencyConverterManager>();
 
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -101,7 +108,6 @@ namespace PartyPic
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())

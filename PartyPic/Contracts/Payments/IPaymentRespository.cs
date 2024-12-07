@@ -4,7 +4,7 @@ using PartyPic.Models.Common;
 
 namespace PartyPic.Contracts.Payments
 {
-    public interface IPaymentRespository
+    public interface IPaymentRepository
     {
         AllPaymentsResponse GetAllPayments();
         Payment GetPaymentById(int id);

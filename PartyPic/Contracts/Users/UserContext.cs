@@ -9,6 +9,13 @@ namespace PartyPic.Contracts.Users
         {
 
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>()
+            .ToTable("Users");
+        }
 
         public DbSet<User> Users { get; set; }
     }

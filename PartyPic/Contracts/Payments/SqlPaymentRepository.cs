@@ -10,7 +10,7 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    public class SqlPaymentRepository : IPaymentRespository
+    public class SqlPaymentRepository : IPaymentRepository
     {
         private readonly PaymentContext _paymentContext;
         private readonly IMapper _mapper;

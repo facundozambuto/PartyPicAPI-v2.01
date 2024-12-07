@@ -14,6 +14,8 @@
         {
             modelBuilder.Entity<Payment>(entity =>
             {
+                entity.ToTable("Payments");
+
                 entity.HasKey(p => p.PaymentId);
 
                 entity.Property(p => p.PaymentType)

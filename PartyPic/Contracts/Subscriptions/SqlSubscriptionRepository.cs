@@ -3,39 +3,89 @@ using PartyPic.Helpers;
 using PartyPic.Models.Subscriptions;
 using PartyPic.Models.Common;
 using PartyPic.Models.Exceptions;
-using PartyPic.Models.Subscriptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using PartyPic.DTOs.Subscriptions;
+using PartyPic.Models.Users;
+using Microsoft.AspNetCore.Http;
+using PartyPic.ThirdParty;
+using PartyPic.Contracts.Plans;
+using PartyPic.Contracts.Users;
 
 namespace PartyPic.Contracts.Subscriptions
 {
-    public class SqlSubscriptionRepository : ISubscriptionRespository
+    public class SqlSubscriptionRepository : ISubscriptionRepository
     {
         private readonly SubscriptionContext _subscriptionContext;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMercadoPagoManager _mercadoPagoManager;
+        private readonly ICurrencyConverter _currencyConverterManager;
+        private readonly PlanContext _planContext;
+        private readonly UserContext _userContext;
 
-        public SqlSubscriptionRepository(SubscriptionContext subscriptionContext, IMapper mapper)
+        public SqlSubscriptionRepository(SubscriptionContext subscriptionContext, 
+                                        IMapper mapper, 
+                                        IHttpContextAccessor httpContextAccessor, 
+                                        IMercadoPagoManager mercadoPagoManager,
+                                        ICurrencyConverter currencyConverterManager,
+                                        PlanContext planContext,
+                                        UserContext userContext)
         {
             _subscriptionContext = subscriptionContext;
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
+            _mercadoPagoManager = mercadoPagoManager;
+            _planContext = planContext;
+            _userContext = userContext;
+            _currencyConverterManager = currencyConverterManager;
         }
 
-        public Subscription CreateSubscription(Subscription subscription)
+        public SubscriptionReadDTO CreateSubscription(SubscriptionCreateDTO subscriptionDto)
         {
-            this.ThrowExceptionIfArgumentIsNull(subscription);
-            this.ThrowExceptionIfPropertyAlreadyExists(subscription, true, 0);
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
 
-            subscription.CreatedDatetime = DateTime.Now;
+            if (_subscriptionContext.Subscriptions.Any(s => s.IsActive && s.MercadoPagoId.ToUpper() != "PENDING" && currentUser.UserId == s.UserId))
+            {
+                throw new AlreadyExistingElementException();
+            }
 
-            _subscriptionContext.Subscriptions.Add(subscription);
+            this.ThrowExceptionIfArgumentIsNull(subscriptionDto);
+
+            var newSub = new Subscription
+            {
+                PlanId = subscriptionDto.PlanId,
+                IsActive = false,
+                IsAutoRenew = subscriptionDto.IsAutoRenew,
+                UserId = currentUser.UserId,
+                StartDate = DateTime.Now,
+                EndDate = DateTime.Now.AddDays(1),
+                CreatedDatetime = DateTime.Now,
+                MarketReference = Guid.NewGuid(),
+                MercadoPagoId = "Pending"
+            };
+
+            _subscriptionContext.Subscriptions.Add(newSub);
 
             this.SaveChanges();
 
+            var mpInitPoint = _mercadoPagoManager.CreateSubscription(new MPSNewSubscriptionRequest
+            {
+                MarketReference = newSub.MarketReference,
+                IsAutoRenew = newSub.IsAutoRenew,
+                PlanType = newSub.PlanId == 1 ? "months" : "years",
+                Amount = (double)this.GetSubscriptionAmount(newSub.PlanId),
+                UserEmail = _userContext.Users.FirstOrDefault(u => u.UserId == newSub.UserId).Email
+            });
+
             var addedSubscription = _subscriptionContext.Subscriptions.OrderByDescending(u => u.CreatedDatetime).FirstOrDefault();
 
-            return addedSubscription;
+            var response = _mapper.Map<SubscriptionReadDTO>(addedSubscription);
+
+            response.MPInitPoint = mpInitPoint;
+
+            return response;
         }
 
         public void DeleteSubscription(int id)
@@ -54,9 +104,23 @@ namespace PartyPic.Contracts.Subscriptions
 
         public AllSubscriptionsResponse GetAllSubscriptions()
         {
+            var subs = _mapper.Map<List<SubscriptionReadDTO>>(_subscriptionContext.Subscriptions.ToList());
+
             return new AllSubscriptionsResponse
             {
-                Subscriptions = _subscriptionContext.Subscriptions.ToList()
+                Subscriptions = subs
+            };
+        }
+
+        public AllSubscriptionsResponse GetAllMySubscriptions()
+        {
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            var subs = _mapper.Map<List<SubscriptionReadDTO>>(_subscriptionContext.Subscriptions.Where(s => s.UserId == currentUser.UserId).ToList());
+
+            return new AllSubscriptionsResponse
+            {
+                Subscriptions = subs
             };
         }
 
@@ -68,7 +132,7 @@ namespace PartyPic.Contracts.Subscriptions
 
             if (!string.IsNullOrEmpty(gridRequest.SearchPhrase))
             {
-                subscriptionRows = _subscriptionContext.Subscriptions.Where(sub => sub.PlanType.Contains(gridRequest.SearchPhrase)).ToList();
+                subscriptionRows = _subscriptionContext.Subscriptions.Where(sub => sub.MarketReference.ToString().Contains(gridRequest.SearchPhrase)).ToList();
             }
 
             if (gridRequest.RowCount != -1 && _subscriptionContext.Subscriptions.Count() > gridRequest.RowCount && gridRequest.Current > 0 && subscriptionRows.Count > 0)
@@ -147,9 +211,6 @@ namespace PartyPic.Contracts.Subscriptions
                 throw new NotSubscriptionFoundException();
             }
 
-            this.ThrowExceptionIfArgumentIsNull(subscription);
-            this.ThrowExceptionIfPropertyIsIncorrect(subscription, false, id);
-
             _mapper.Map(subscriptionUpdateDto, retrievedSubscription);
 
             _subscriptionContext.Subscriptions.Update(retrievedSubscription);
@@ -159,41 +220,60 @@ namespace PartyPic.Contracts.Subscriptions
             return this.GetSubscriptionById(id);
         }
 
-        private void ThrowExceptionIfPropertyIsIncorrect(Subscription subscription, bool isNew, int id)
+        public SubscriptionReadDTO ConfirmSubscription(string externalReference)
         {
-            if (_subscriptionContext.Subscriptions.ToList().Any(sub => sub.PlanType == subscription.PlanType))
+            var externalReferenceGuid = Guid.Parse(externalReference);
+
+            var subscription = _subscriptionContext.Subscriptions
+                .FirstOrDefault(s => s.MarketReference == externalReferenceGuid);
+
+            if (subscription == null)
             {
-                throw new PropertyIncorrectException();
+                throw new NotSubscriptionFoundException();
             }
+
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            if (subscription.IsActive || subscription.MercadoPagoId.ToUpper() != "PENDING" || currentUser.UserId != subscription.UserId)
+            {
+                throw new InvalidOperationException();
+            }
+
+            var mercadoPagoSubscription = _mercadoPagoManager.GetSubscriptionByExternalReference(externalReference);
+
+            if (mercadoPagoSubscription == null || mercadoPagoSubscription.Status.ToUpper() != "AUTHORIZED")
+            {
+                throw new NotSubscriptionFoundException();
+            }
+
+            subscription.IsActive = true;
+            subscription.MercadoPagoId = mercadoPagoSubscription.Id;
+
+            _subscriptionContext.Update(subscription);
+
+            this.SaveChanges();
+
+            return _mapper.Map<SubscriptionReadDTO>(subscription);
         }
 
-        private void ThrowExceptionIfPropertyAlreadyExists(Subscription subscription, bool isNew, int id)
-        {
-            if (!isNew)
-            {
-                if (subscription.CreatedDatetime != _subscriptionContext.Subscriptions.FirstOrDefault(e => e.SubscriptionId == id).CreatedDatetime)
-                {
-                    throw new PropertyIncorrectException();
-                }
-            }
-
-            if (_subscriptionContext.Subscriptions.ToList().Any(sub => sub.PlanType == subscription.PlanType))
-            {
-                throw new PropertyIncorrectException();
-            }
-        }
-
-        private void ThrowExceptionIfArgumentIsNull(Subscription subscription)
+        private void ThrowExceptionIfArgumentIsNull(SubscriptionCreateDTO subscription)
         {
             if (subscription == null)
             {
                 throw new ArgumentNullException(nameof(subscription));
             }
+        }
 
-            if (string.IsNullOrEmpty(subscription.PlanType))
-            {
-                throw new ArgumentNullException(nameof(subscription.PlanType));
-            }
+        private decimal GetSubscriptionAmount(int? planId)
+        {
+            var latestPlanPrice = _planContext.Plans
+                            .SelectMany(p => p.PriceHistories)
+                            .Where(ph => !ph.EndDate.HasValue && ph.PlanId == planId)
+                            .OrderByDescending(ph => ph.StartDate)
+                            .Select(ph => ph.Price)
+                            .FirstOrDefault();
+
+            return _currencyConverterManager.GetAmountOfPesosByUSD(amountOfUSD: latestPlanPrice);
         }
     }
 }

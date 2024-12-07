@@ -4,7 +4,7 @@ using PartyPic.Models.Common;
 
 namespace PartyPic.Contracts.Categories
 {
-    public interface ICategoryRespository
+    public interface ICategoryRepository
     {
         AllCategoriesResponse GetAllCategories();
         Category GetCategoryById(int id);

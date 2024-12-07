@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace PartyPic.Contracts.Categories
 {
-    public class SqlCategoryRepository : ICategoryRespository
+    public class SqlCategoryRepository : ICategoryRepository
     {
         private readonly CategoryContext _categoryContext;
         private readonly IMapper _mapper;

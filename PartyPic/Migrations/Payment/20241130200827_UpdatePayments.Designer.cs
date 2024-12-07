@@ -10,7 +10,7 @@ using PartyPic.Contracts.Payments;
 namespace PartyPic.Migrations.Payment
 {
     [DbContext(typeof(PaymentContext))]
-    [Migration("20241130051721_UpdatePayments")]
+    [Migration("20241130200827_UpdatePayments")]
     partial class UpdatePayments
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -113,26 +113,6 @@ namespace PartyPic.Migrations.Payment
                     b.ToTable("Payments");
                 });
 
-            modelBuilder.Entity("PartyPic.Models.Roles.Role", b =>
-                {
-                    b.Property<int>("RoleId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<DateTime>("CreatedDatetime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.HasKey("RoleId");
-
-                    b.ToTable("Role");
-                });
-
             modelBuilder.Entity("PartyPic.Models.Subscriptions.Subscription", b =>
                 {
                     b.Property<int>("SubscriptionId")
@@ -225,9 +205,7 @@ namespace PartyPic.Migrations.Payment
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("User");
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("PartyPic.Models.Payments.Payment", b =>
@@ -257,17 +235,6 @@ namespace PartyPic.Migrations.Payment
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("PartyPic.Models.Users.User", b =>
-                {
-                    b.HasOne("PartyPic.Models.Roles.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("PartyPic.Models.Events.Event", b =>
