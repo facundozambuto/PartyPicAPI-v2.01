@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Http;
 using PartyPic.ThirdParty;
 using PartyPic.Contracts.Plans;
 using PartyPic.Contracts.Users;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace PartyPic.Contracts.Subscriptions
 {
@@ -60,7 +62,7 @@ namespace PartyPic.Contracts.Subscriptions
                 IsAutoRenew = subscriptionDto.IsAutoRenew,
                 UserId = currentUser.UserId,
                 StartDate = DateTime.Now,
-                EndDate = DateTime.Now.AddDays(1),
+                EndDate = DateTime.MinValue,
                 CreatedDatetime = DateTime.Now,
                 MarketReference = Guid.NewGuid(),
                 MercadoPagoId = "Pending"
@@ -90,7 +92,7 @@ namespace PartyPic.Contracts.Subscriptions
 
         public void DeleteSubscription(int id)
         {
-            var subscription = this.GetSubscriptionById(id);
+            var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.SubscriptionId == id);
 
             if (subscription == null)
             {
@@ -112,16 +114,74 @@ namespace PartyPic.Contracts.Subscriptions
             };
         }
 
-        public AllSubscriptionsResponse GetAllMySubscriptions()
+        public async Task<AllSubscriptionsResponse> GetAllMySubscriptionsAsync()
         {
-            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
-
-            var subs = _mapper.Map<List<SubscriptionReadDTO>>(_subscriptionContext.Subscriptions.Where(s => s.UserId == currentUser.UserId).ToList());
-
-            return new AllSubscriptionsResponse
+            try
             {
-                Subscriptions = subs
-            };
+                var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+                var availablePlans = await _planContext.Plans.ToListAsync();
+
+                var subs = await _subscriptionContext.Subscriptions
+                    .Where(s => s.UserId == currentUser.UserId)
+                    .ToListAsync();
+
+                var subscriptionDtos = subs.Select(s => new SubscriptionReadDTO
+                {
+                    SubscriptionId = s.SubscriptionId,
+                    UserId = s.UserId,
+                    PlanType = availablePlans.FirstOrDefault(p => p.Id == s.PlanId)?.Name ?? "N/A",
+                    StartDate = s.StartDate,
+                    EndDate = s.EndDate,
+                    IsActive = s.IsActive,
+                    IsAutoRenew = s.IsAutoRenew,
+                    MarketReference = s.MarketReference,
+                    MercadoPagoId = s.MercadoPagoId,
+                    CreatedDatetime = s.CreatedDatetime,
+                    IsCancelled = s.IsCancelled,
+                    CancelledDate = s.CancelledDate,
+                    RenewalDate = DateTime.MinValue,
+                    LatestPrice = this.GetSubscriptionAmount(s.PlanId)
+                }).ToList();
+
+                var activeSubscriptions = subscriptionDtos
+                    .Where(s => s.IsActive && !string.IsNullOrEmpty(s.MercadoPagoId))
+                    .ToList();
+
+                if (activeSubscriptions.Any())
+                {
+                    var tasks = activeSubscriptions.Select(async activeSub =>
+                    {
+                        try
+                        {
+                            var mpSub = await _mercadoPagoManager.GetSubscriptionAsync(activeSub.MercadoPagoId);
+
+                            if (mpSub.Status.ToUpper() != "AUTHORIZED")
+                            {
+                                throw new NotActiveSubscription();
+                            }
+                            activeSub.RenewalDate = (DateTime)(mpSub?.NextPaymentDate ?? null);
+                        }
+                        catch (Exception ex)
+                        {
+                            throw;
+                        }
+                    });
+
+                    await Task.WhenAll(tasks);
+                }
+
+                var response = new AllSubscriptionsResponse
+                {
+                    Subscriptions = subscriptionDtos
+                };
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
         public SubscriptionGrid GetAllSubscriptionsForGrid(GridRequest gridRequest)
@@ -165,7 +225,7 @@ namespace PartyPic.Contracts.Subscriptions
                 }
             }
 
-            var categoriesGrid = new SubscriptionGrid
+            var susbcriptionsGrid = new SubscriptionGrid
             {
                 Rows = subscriptionRows,
                 Total = _subscriptionContext.Subscriptions.Count(),
@@ -173,24 +233,31 @@ namespace PartyPic.Contracts.Subscriptions
                 RowCount = gridRequest.RowCount
             };
 
-            return categoriesGrid;
+            return susbcriptionsGrid;
         }
 
-        public Subscription GetSubscriptionById(int id)
+        public async Task<SubscriptionReadDTO> GetSubscriptionByIdAsync(int subId)
         {
-            var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(sub => sub.SubscriptionId == id);
+            var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(sub => sub.SubscriptionId == subId);
 
             if (subscription == null)
             {
                 throw new NotSubscriptionFoundException();
             }
 
-            return subscription;
+            var response =  _mapper.Map<SubscriptionReadDTO>(subscription);
+
+            var availablePlans = await _planContext.Plans.ToListAsync();
+
+            response.LatestPrice = this.GetSubscriptionAmount(subscription.PlanId);
+            response.PlanType = availablePlans.FirstOrDefault(p => p.Id == subscription.PlanId).Name;
+
+            return response;
         }
 
         public void PartiallyUpdate(int id, SubscriptionUpdateDTO subscription)
         {
-            this.UpdateSubscription(id, subscription);
+            this.UpdateSubscriptionAsync(id, subscription);
 
             this.SaveChanges();
         }
@@ -200,11 +267,9 @@ namespace PartyPic.Contracts.Subscriptions
             return (_subscriptionContext.SaveChanges() >= 0);
         }
 
-        public Subscription UpdateSubscription(int id, SubscriptionUpdateDTO subscriptionUpdateDto)
+        public async Task<SubscriptionReadDTO> UpdateSubscriptionAsync(int id, SubscriptionUpdateDTO subscriptionUpdateDto)
         {
-            var subscription = _mapper.Map<Subscription>(subscriptionUpdateDto);
-
-            var retrievedSubscription = this.GetSubscriptionById(id);
+            var retrievedSubscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.SubscriptionId == id);
 
             if (retrievedSubscription == null)
             {
@@ -217,7 +282,7 @@ namespace PartyPic.Contracts.Subscriptions
 
             this.SaveChanges();
 
-            return this.GetSubscriptionById(id);
+            return  await this.GetSubscriptionByIdAsync(id);
         }
 
         public SubscriptionReadDTO ConfirmSubscription(string externalReference)
@@ -249,11 +314,20 @@ namespace PartyPic.Contracts.Subscriptions
             subscription.IsActive = true;
             subscription.MercadoPagoId = mercadoPagoSubscription.Id;
 
+            if (!subscription.IsAutoRenew && mercadoPagoSubscription.AutoRecurring.EndDate != null)
+            {
+                subscription.EndDate = mercadoPagoSubscription.AutoRecurring.EndDate;
+            }
+
             _subscriptionContext.Update(subscription);
 
             this.SaveChanges();
 
-            return _mapper.Map<SubscriptionReadDTO>(subscription);
+            var response = _mapper.Map<SubscriptionReadDTO>(subscription);
+
+            response.LatestPrice = this.GetSubscriptionAmount(subscription.PlanId);
+
+            return response;
         }
 
         private void ThrowExceptionIfArgumentIsNull(SubscriptionCreateDTO subscription)

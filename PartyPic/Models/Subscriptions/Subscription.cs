@@ -18,5 +18,7 @@ namespace PartyPic.Models.Subscriptions
         public Guid MarketReference { get; set; }
         public Plan Plan { get; set; }
         public User User { get; set; }
+        public bool IsCancelled { get; set; }
+        public DateTime? CancelledDate { get; set; }
     }
 }

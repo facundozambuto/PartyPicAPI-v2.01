@@ -37,7 +37,9 @@ namespace PartyPic.Controllers
         [Route("~/api/Subscriptions/mysubs")]
         public ActionResult GetAllMySubscriptions()
         {
-            return ExecuteMethod<SubscriptionController, GetAllSubscriptionsApiResponse, AllSubscriptionsResponse>(() => _subscriptionRepository.GetAllMySubscriptions());
+            return ExecuteMethod<SubscriptionController, GetAllSubscriptionsApiResponse, AllSubscriptionsResponse>(
+                () => _subscriptionRepository.GetAllMySubscriptionsAsync().GetAwaiter().GetResult()
+            );
         }
 
         [Authorize]
@@ -64,12 +66,14 @@ namespace PartyPic.Controllers
             return ExecuteMethod<PlanController, SubscriptionReadDTO, SubscriptionReadDTO>(() => _subscriptionRepository.CreateSubscription(subscriptionCreateDTO));
         }
 
-        //[Authorize]
-        //[HttpGet("{SubscriptionId}", Name = "GetSubscriptionById")]
-        //public ActionResult<Subscription> GetSubscriptionById(int SubscriptionId)
-        //{
-        //    return ExecuteMethod<SubscriptionController, SubscriptionApiResponse, SubscriptionReadDTO>(() => _subscriptionRepository.GetSubscriptionById(SubscriptionId));
-        //}
+        [Authorize]
+        [HttpGet("{SubscriptionId}", Name = "GetSubscriptionById")]
+        public ActionResult<SubscriptionReadDTO> GetSubscriptionById(int subscriptionId)
+        {
+            return ExecuteMethod<SubscriptionController, SubscriptionReadDTO, SubscriptionReadDTO>(
+                () => _subscriptionRepository.GetSubscriptionByIdAsync(subscriptionId).GetAwaiter().GetResult()
+            );
+        }
 
         [Authorize]
         [Route("~/api/Subscriptions/Confirm")]
