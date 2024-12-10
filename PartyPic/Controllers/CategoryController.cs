@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using PartyPic.Contracts.Categories;
 using PartyPic.DTOs.Categories;
+using PartyPic.Helpers;
 using PartyPic.Models.Categories;
 using PartyPic.Models.Common;
 using PartyPic.Models.Exceptions;
@@ -36,6 +37,7 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Authorize]
+        [AuthorizeRole(1)]
         [Route("~/api/categories/grid")]
         public ActionResult<CategoryGrid> GetAllCategoriesForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
         {
@@ -60,6 +62,7 @@ namespace PartyPic.Controllers
 
         [HttpPost]
         [Authorize]
+        [AuthorizeRole(1)]
         public ActionResult<Category> CreateCategory(CategoryCreateDTO categoryCreateDTO)
         {
             var categoryModel = _mapper.Map<Category>(categoryCreateDTO);
@@ -69,6 +72,7 @@ namespace PartyPic.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
+        [AuthorizeRole(1)]
         public ActionResult UpdateCategory(int id, CategoryUpdateDTO categoryUpdateDto)
         {
             return ExecuteMethod<CategoryController, CategoryApiResponse, Category>(() => _categoryRepository.UpdateCategory(id, categoryUpdateDto));
@@ -76,6 +80,7 @@ namespace PartyPic.Controllers
 
         [HttpPatch("{id}")]
         [Authorize]
+        [AuthorizeRole(1)]
         public ActionResult PartialCategoryUpdate(int id, JsonPatchDocument<CategoryUpdateDTO> patchDoc)
         {
             var categoryModelFromRepo = _categoryRepository.GetCategoryById(id);
@@ -99,6 +104,7 @@ namespace PartyPic.Controllers
 
         [HttpDelete("{id}")]
         [Authorize]
+        [AuthorizeRole(1)]
         public ActionResult DeleteCategory(int id)
         {
             return ExecuteMethod<CategoryController>(() => _categoryRepository.DeleteCategory(id));

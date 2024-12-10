@@ -8,6 +8,7 @@ using PartyPic.Models.Common;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.JsonPatch;
 using PartyPic.Models.Exceptions;
+using PartyPic.Helpers;
 
 namespace PartyPic.Controllers
 {
@@ -29,6 +30,7 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Authorize]
+        [AuthorizeRole(1)]
         public ActionResult GetAllUsers()
         {
             return ExecuteMethod<UserController, GetAllUsersApiResponse, AllUsersResponse>(() =>_userRepository.GetAllUsers());
@@ -43,6 +45,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpGet]
         [Route("~/api/users/grid")]
         public ActionResult<UserGrid> GetAllUsersForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
@@ -67,6 +70,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpPost]
         public ActionResult<User> CreateUser(UserCreateDTO userCreateDTO)
         {
@@ -106,6 +110,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpDelete("{userId}")]
         public ActionResult DeleteUser(int userId)
         {

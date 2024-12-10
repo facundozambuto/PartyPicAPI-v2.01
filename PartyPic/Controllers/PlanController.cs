@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.JsonPatch;
 using PartyPic.Models.Exceptions;
 using System.Collections.Generic;
+using PartyPic.Helpers;
 
 namespace PartyPic.Controllers
 {
@@ -36,6 +37,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpGet]
         [Route("~/api/plans/grid")]
         public ActionResult<PlanGrid> GetAllPlansForGrid([FromQuery] int current, [FromQuery] int rowCount, [FromQuery] string searchPhrase, [FromQuery] string sortBy, string orderBy)
@@ -60,6 +62,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpGet]
         [Route("~/api/plans/pricehistory")]
         public ActionResult<IEnumerable<PlanPriceHistoryDTO>> GetPricesByPlanId([FromQuery] int planId)
@@ -70,6 +73,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpPost]
         public ActionResult<Plan> CreatePlan(PlanCreateDTO planCreateDTO)
         {
@@ -77,6 +81,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpPut("{id}")]
         public ActionResult UpdatePlan(int id, PlanUpdateDTO planUpdateDto)
         {
@@ -84,6 +89,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpPatch("{planId}")]
         public ActionResult PartialPlanUpdate(int planId, JsonPatchDocument<PlanUpdateDTO> patchDoc)
         {
@@ -107,6 +113,7 @@ namespace PartyPic.Controllers
         }
 
         [Authorize]
+        [AuthorizeRole(1)]
         [HttpDelete("{planId}")]
         public ActionResult DeletePlan(int planId)
         {
