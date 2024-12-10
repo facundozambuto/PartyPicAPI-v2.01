@@ -9,6 +9,7 @@ using PartyPic.Helpers;
 using PartyPic.Models.Common;
 using PartyPic.Models.Exceptions;
 using PartyPic.Models.Users;
+using PartyPic.ThirdParty;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -24,13 +25,15 @@ namespace PartyPic.Contracts.Users
         private readonly IMapper _mapper;
         private readonly IConfiguration _config;
         private readonly ISessionLogsRepository _sessionLogsRepository;
+        private readonly IEmailSender _emailSenderManager;
 
-        public SqlUserRepository(UserContext userContext, IMapper mapper, IConfiguration config, ISessionLogsRepository sessionLogsRepository)
+        public SqlUserRepository(UserContext userContext, IMapper mapper, IConfiguration config, ISessionLogsRepository sessionLogsRepository, IEmailSender emailSenderManager)
         {
             _userContext = userContext;
             _mapper = mapper;
             _config = config;
             _sessionLogsRepository = sessionLogsRepository;
+            _emailSenderManager = emailSenderManager;
         }
 
         public User CreateUser(User user)
@@ -289,34 +292,13 @@ namespace PartyPic.Contracts.Users
                 throw new NotActiveUserException();
             }
 
-            MimeMessage message = new MimeMessage();
-
-            MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("EmailFromAdmin"));
-
-            message.From.Add(from);
-
-            MailboxAddress to = new MailboxAddress(user.Name, user.Email);
-
-            message.To.Add(to);
-
-            message.Subject = _config.GetValue<string>("RecoverPasswordEmailSubject");
-
-            BodyBuilder bodyBuilder = new BodyBuilder();
-            bodyBuilder.HtmlBody = _config.GetValue<string>("RecoverPasswordEmailTemplate").Replace("***userEmail***", user.Email).Replace("***userPassword***", user.Password);
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            foreach (var body in message.BodyParts.OfType<TextPart>())
-                body.ContentTransferEncoding = ContentEncoding.Base64;
-
-            SmtpClient client = new SmtpClient();
-            client.CheckCertificateRevocation = false;
-            client.Connect(_config.GetValue<string>("SMTPServer"), 2525, MailKit.Security.SecureSocketOptions.StartTls);
-            client.Authenticate(_config.GetValue<string>("SMTPUser"), _config.GetValue<string>("SMTPPassword"));
-
-            client.Send(message);
-            client.Disconnect(true);
-            client.Dispose();
+            _emailSenderManager.SendEmail(
+                user.Name,
+                user.Email,
+                _config.GetValue<string>("RecoverPasswordEmailSubject"),
+                _config.GetValue<string>("RecoverPasswordEmailTemplate").Replace("***userEmail***", user.Email).Replace("***userPassword***", user.Password),
+                null
+             );
         }
 
         private void ThrowExceptionIfArgumentIsNull(User user)

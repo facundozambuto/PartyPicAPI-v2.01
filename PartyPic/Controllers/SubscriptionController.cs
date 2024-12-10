@@ -77,9 +77,20 @@ namespace PartyPic.Controllers
 
         [Authorize]
         [Route("~/api/Subscriptions/Confirm")]
+        [HttpGet]
         public ActionResult<SubscriptionReadDTO> ConfirmSubscription([FromQuery] string externalReference)
         {
             return ExecuteMethod<SubscriptionController, SubscriptionReadDTO, SubscriptionReadDTO>(() => _subscriptionRepository.ConfirmSubscription(externalReference));
+        }
+
+        [Authorize]
+        [Route("~/api/Subscriptions/toggle-renewal")]
+        [HttpPut]
+        public ActionResult<SubscriptionReadDTO> ToggleAutoRenewal([FromQuery] int subscriptionId)
+        {
+            return ExecuteMethod<SubscriptionController, SubscriptionReadDTO, SubscriptionReadDTO>(
+                () => _subscriptionRepository.ToggleAutoRenewalAsync(subscriptionId).GetAwaiter().GetResult()
+            );
         }
     }
 }

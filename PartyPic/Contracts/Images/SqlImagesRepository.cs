@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PartyPic.Contracts.BannedProfiles;
+using PartyPic.Contracts.Subscriptions;
 using PartyPic.Models.Exceptions;
 using PartyPic.Models.Images;
+using PartyPic.Models.Users;
 using PartyPic.ThirdParty;
 using System;
 using System.Collections.Generic;
@@ -20,22 +23,33 @@ namespace PartyPic.Contracts.Images
         private readonly IMapper _mapper;
         private readonly IBannedProfileRepository _bannedProfileRepository;
         private readonly IBlobStorageManager _blobStorageManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly SubscriptionContext _subscriptionContext;
+        private readonly IMercadoPagoManager _mercadoPagoManager;
 
         public SqlImagesRepository(ImagesContext imageContext, 
                                     IConfiguration config, 
                                     IMapper mapper, 
                                     IBannedProfileRepository bannedProfileRepository,
-                                    IBlobStorageManager blobStorageManager)
+                                    IBlobStorageManager blobStorageManager,
+                                    IHttpContextAccessor httpContextAccessor,
+                                    SubscriptionContext subscriptionContext,
+                                    IMercadoPagoManager mercadoPagoManager)
         {
             _imageContext = imageContext;
             _config = config;
             _mapper = mapper;
             _bannedProfileRepository = bannedProfileRepository;
             _blobStorageManager = blobStorageManager;
+            _httpContextAccessor = httpContextAccessor;
+            _subscriptionContext = subscriptionContext;
+            _mercadoPagoManager = mercadoPagoManager;
         }
 
-        public IEnumerable<Image> GetAllEventImages(int eventId, bool firstRequest, string requestTime)
+        public async Task<IEnumerable<Image>> GetAllEventImagesAsync(int eventId, bool firstRequest, string requestTime)
         {
+            await this.ValidateUserSubscriptionsAsync();
+
             if (firstRequest)
             {
                 return _imageContext.Images.Where(image => image.EventId == eventId && image.DeletedDatetime == null);
@@ -131,7 +145,7 @@ namespace PartyPic.Contracts.Images
             byte[] fileData;
             using (var target = new MemoryStream())
             {
-                await file.CopyToAsync(target); // Usa la versión asíncrona
+                await file.CopyToAsync(target);
                 fileData = target.ToArray();
             }
 
@@ -169,8 +183,24 @@ namespace PartyPic.Contracts.Images
             return fileUri;
         }
 
+        public async Task<byte[]> DownloadImagesAsZipAsync(int eventId)
+        {
+            var imagePaths = await _imageContext.Images
+                .Where(img => img.EventId == eventId)
+                .Select(img => img.Path)
+                .ToListAsync();
 
-        public void DeleteImage(DeleteImageRequest deleteImageRequest)
+            if (!imagePaths.Any())
+            {
+                throw new NotImageFoundException();
+            }
+
+            string containerName = _config.GetValue<string>("BlobStorageSettings:ImagesBlobContainer");
+
+            return await _blobStorageManager.DownloadAlbumAsync(imagePaths, containerName);
+        }
+
+        public async Task DeleteImageAsync(DeleteImageRequest deleteImageRequest)
         {
             try
             {
@@ -187,12 +217,9 @@ namespace PartyPic.Contracts.Images
 
                     _imageContext.SaveChanges();
 
-                    string filePath = Path.Combine(_config.GetValue<string>("DirectoryEventImagesPath") + deleteImageRequest.EventId, deleteImageRequest.ImageId + ".jpg");
+                    string containerName = _config.GetValue<string>("BlobStorageSettings:ImagesBlobContainer");
 
-                    if (File.Exists(filePath))
-                    {
-                        File.Delete(filePath);
-                    }
+                    await _blobStorageManager.RemoveDocument(retrievedImage.Path, containerName);
 
                     if (deleteImageRequest.BlockProfile && deleteImageRequest.UserId != 0)
                     {
@@ -205,10 +232,36 @@ namespace PartyPic.Contracts.Images
                         });
                     }
                 }
+                else
+                {
+                    throw new NotImageFoundException();
+                }
             }
             catch (Exception)
             {
                 throw;
+            }
+        }
+
+        private async Task ValidateUserSubscriptionsAsync()
+        {
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            if (currentUser.RoleId == 2)
+            {
+                if (!_subscriptionContext.Subscriptions.Any(s => s.IsActive))
+                {
+                    throw new NotActiveSubscription();
+                }
+
+                var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.IsActive);
+
+                var mpSub = await _mercadoPagoManager.GetSubscriptionAsync(subscription.MercadoPagoId);
+
+                if (mpSub == null || string.IsNullOrEmpty(mpSub.Status) || mpSub.Status.ToUpper() != "AUTHORIZED")
+                {
+                    throw new NotActiveSubscription();
+                }
             }
         }
     }

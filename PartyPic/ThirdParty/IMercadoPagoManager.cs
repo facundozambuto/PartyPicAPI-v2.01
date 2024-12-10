@@ -9,5 +9,6 @@ namespace PartyPic.ThirdParty
         string CreateSubscription(MPSNewSubscriptionRequest request);
         Preapproval GetSubscriptionByExternalReference(string externalReference);
         Task<MPSubscriptionResponse> GetSubscriptionAsync(string subscriptionId);
+        Task<bool> ToggleAutoRenewAsync(string subscriptionId, bool isAutoRenew);
     }
 }

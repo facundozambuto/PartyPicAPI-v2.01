@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using PartyPic.Contracts.Users;
 using PartyPic.DTOs.Venues;
 using PartyPic.Helpers;
 using PartyPic.Models.Common;
 using PartyPic.Models.Exceptions;
+using PartyPic.Models.Users;
 using PartyPic.Models.Venues;
 using System;
 using System.Collections.Generic;
@@ -16,12 +18,14 @@ namespace PartyPic.Contracts.Venues
         private readonly VenueContext _venueContext;
         private readonly IMapper _mapper;
         private readonly UserContext _userContext;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public SqlVenueRepository(VenueContext venueContext, IMapper mapper, UserContext userContext)
+        public SqlVenueRepository(VenueContext venueContext, IMapper mapper, UserContext userContext, IHttpContextAccessor httpContextAccessor)
         {
             _venueContext = venueContext;
             _mapper = mapper;
             _userContext = userContext;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public Venue CreateVenue(Venue venue)
@@ -29,6 +33,13 @@ namespace PartyPic.Contracts.Venues
             this.ThrowExceptionIfArgumentIsNull(venue);
             this.ThrowExceptionIfPropertyAlreadyExists(venue, true, 0);
             this.ThrowExceptionIfUserDoesNotExist(venue.UserId);
+
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            if (currentUser.RoleId == 2 && currentUser.UserId != venue.UserId)
+            {
+                throw new InvalidOperationException();
+            }
 
             venue.CreatedDatetime = DateTime.Now;
 
@@ -43,19 +54,36 @@ namespace PartyPic.Contracts.Venues
 
         public AllVenuesResponse GetAllVenues()
         {
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+            var listOfVenues = new List<Venue>();
+
+            listOfVenues = _venueContext.Venues.ToList();
+
+            if (currentUser.RoleId == 2)
+            {
+                listOfVenues = listOfVenues.Where(v => v.UserId == currentUser.UserId).ToList();
+            }
+
             return new AllVenuesResponse
             {
-                Venues = _venueContext.Venues.ToList()
+                Venues = listOfVenues
             };
         }
 
         public Venue GetVenueById(int id)
         {
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
             var venue = _venueContext.Venues.FirstOrDefault(venue => venue.VenueId == id);
 
             if (venue == null)
             {
                 throw new NotVenueFoundException();
+            }
+
+            if (currentUser.RoleId == 2 && venue.UserId != currentUser.UserId)
+            {
+                throw new InvalidOperationException();
             }
 
             return venue;
@@ -89,6 +117,8 @@ namespace PartyPic.Contracts.Venues
 
         public Venue UpdateVenue(int id, VenueUpdateDTO venueUpdateDto)
         {
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
             var venue = _mapper.Map<Venue>(venueUpdateDto);
 
             var retrievedVenue = this.GetVenueById(id);
@@ -96,6 +126,11 @@ namespace PartyPic.Contracts.Venues
             if (retrievedVenue == null)
             {
                 throw new NotVenueFoundException();
+            }
+
+            if (currentUser.RoleId == 2 && retrievedVenue.UserId != currentUser.UserId)
+            {
+                throw new InvalidOperationException();
             }
 
             this.ThrowExceptionIfArgumentIsNull(venue);
@@ -113,7 +148,17 @@ namespace PartyPic.Contracts.Venues
 
         public VenueReadDTOGrid GetAllVenuesForGrid(GridRequest gridRequest)
         {
-            var venueRows = _mapper.Map<List<VenueReadDTO>>(_venueContext.Venues.ToList());
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+            var listOfVenues = new List<Venue>();
+
+            listOfVenues = _venueContext.Venues.ToList();
+
+            if (currentUser.RoleId == 2)
+            {
+                listOfVenues = listOfVenues.Where(v => v.UserId == currentUser.UserId).ToList();
+            }
+
+            var venueRows = _mapper.Map<List<VenueReadDTO>>(listOfVenues);
 
             foreach (VenueReadDTO ve in venueRows)
             {

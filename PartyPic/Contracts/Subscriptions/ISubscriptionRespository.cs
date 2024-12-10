@@ -17,5 +17,6 @@ namespace PartyPic.Contracts.Subscriptions
         SubscriptionGrid GetAllSubscriptionsForGrid(GridRequest gridRequest);
         Task<AllSubscriptionsResponse> GetAllMySubscriptionsAsync();
         SubscriptionReadDTO ConfirmSubscription(string externalReference);
+        Task<SubscriptionReadDTO> ToggleAutoRenewalAsync(int subId);
     }
 }

@@ -10,6 +10,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace PartyPic.ThirdParty.Impl
 {
@@ -121,6 +122,68 @@ namespace PartyPic.ThirdParty.Impl
                 var subscriptionResponse = JsonConvert.DeserializeObject<MPSubscriptionResponse>(jsonResponse);
                 
                 return subscriptionResponse;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> ToggleAutoRenewAsync(string subscriptionId, bool isAutoRenew)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    var url = $"{BaseUrl}/{subscriptionId}";
+                    var payload = new object();
+
+                    if (isAutoRenew)
+                    {
+                        payload = new
+                        {
+                            auto_recurring = new
+                            {
+                                frequency = 1,
+                                frequency_type = "months",
+                            }
+                        };
+                    }
+                    else
+                    {
+                        payload = new
+                        {
+                            auto_recurring = new
+                            {
+                                frequency = 1,
+                                frequency_type = "months",
+                                end_date = DateTime.Now.AddDays(1).ToString("yyyy-MM-ddTHH:mm:ssZ")
+                            },
+                            status = "cancelled"
+                        };
+                    }
+
+                    var jsonPayload = JsonConvert.SerializeObject(payload);
+
+                    var request = new HttpRequestMessage(HttpMethod.Put, url)
+                    {
+                        Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+                    };
+
+                    request.Headers.Add("Authorization", $"Bearer {_config.GetValue<string>("MercadoPagoSettings:AccessToken")}");
+
+                    var response = await client.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
             }
             catch (Exception ex)
             {

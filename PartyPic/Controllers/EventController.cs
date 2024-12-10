@@ -19,7 +19,7 @@ namespace PartyPic.Controllers
     {
         private readonly IEventRepository _eventRepository;
         private readonly IMapper _mapper;
-        private readonly Contracts.Logger.ILoggerManager _logger;
+        private readonly ILoggerManager _logger;
 
         public EventController(IEventRepository eventRepository, IMapper mapper, IConfiguration config, ILoggerManager logger) : base(mapper, config, logger)
         {
@@ -73,7 +73,9 @@ namespace PartyPic.Controllers
         {
             var eventModel = _mapper.Map<Event>(eventCreateDTO);
 
-            return ExecuteMethod<EventController, EventApiResponse, Event>(() => _eventRepository.CreateEvent(eventModel));
+            return ExecuteMethod<EventController, EventApiResponse, Event>(
+                () => _eventRepository.CreateEventAsync(eventModel).GetAwaiter().GetResult()
+            );
         }
 
         [HttpPut("{id}")]

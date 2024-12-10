@@ -93,7 +93,8 @@ namespace PartyPic
             services.AddScoped<IBlobStorageManager, BlobStorageManager>();
             services.AddScoped<IMercadoPagoManager, MercadoPagoManager>();
             services.AddScoped<ICurrencyConverter, CurrencyConverterManager>();
-
+            services.AddScoped<ICurrencyConverter, CurrencyConverterManager>();
+            services.AddScoped<IEmailSender, EmailSenderManager>();
 
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 

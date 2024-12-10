@@ -19,6 +19,7 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="10.1.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
     <PackageReference Include="MailKit" Version="2.13.0" />
     <PackageReference Include="mercadopago-sdk" Version="2.4.1" />
     <PackageReference Include="Microsoft.AspNet.WebApi.Core" Version="5.2.7" />
@@ -38,6 +39,12 @@
 
   <ItemGroup>
     <Folder Include="Config\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\IconoPartyPic.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

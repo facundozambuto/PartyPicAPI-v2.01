@@ -18,6 +18,8 @@ using MimeKit;
 using PartyPic.Contracts.Users;
 using Microsoft.AspNetCore.Http;
 using PartyPic.Models.Users;
+using PartyPic.ThirdParty;
+using PartyPic.Contracts.Subscriptions;
 
 namespace PartyPic.Contracts.Events
 {
@@ -31,6 +33,9 @@ namespace PartyPic.Contracts.Events
         private readonly ImagesContext _imagesContext;
         private readonly UserContext _userContext;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IEmailSender _emailSenderManager;
+        private readonly SubscriptionContext _subscriptionContext;
+        private readonly IMercadoPagoManager _mercadoPagoManager;
 
         public SqlEventRepository(
             EventContext eventContext, 
@@ -40,7 +45,10 @@ namespace PartyPic.Contracts.Events
             CategoryContext categoryContext, 
             ImagesContext imagesContext,
             UserContext userContext,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IEmailSender emailSenderManager,
+            SubscriptionContext subscriptionContext,
+            IMercadoPagoManager mercadoPagoManager)
         {
             _eventContext = eventContext;
             _mapper = mapper;
@@ -50,6 +58,9 @@ namespace PartyPic.Contracts.Events
             _imagesContext = imagesContext;
             _userContext = userContext;
             _httpContextAccessor = httpContextAccessor;
+            _emailSenderManager = emailSenderManager;
+            _subscriptionContext = subscriptionContext;
+            _mercadoPagoManager = mercadoPagoManager;
         }
 
         public AllEventsResponse GetAllEvents()
@@ -115,10 +126,11 @@ namespace PartyPic.Contracts.Events
             return retrievedEvent;
         }
 
-        public Event CreateEvent(Event ev)
+        public async System.Threading.Tasks.Task<Event> CreateEventAsync(Event ev)
         {
             this.ThrowExceptionIfArgumentIsNull(ev);
             this.ThrowExceptionIfPropertyIsIncorrect(ev, true, 0);
+            await this.ValidateUserSubscriptionsAsync();
 
             ev.CreatedDatetime = DateTime.Now;
 
@@ -198,6 +210,8 @@ namespace PartyPic.Contracts.Events
                 eventRows = eventRows.Where(ev => venues.Any(v => v.VenueId == ev.VenueId)).ToList();
             }
 
+            var totalAfterUserValidations = eventRows.Count();
+
             if (!string.IsNullOrEmpty(gridRequest.SearchPhrase))
             {
                 eventRows = _eventContext.Events.Where(u => u.Code.Contains(gridRequest.SearchPhrase)
@@ -263,7 +277,7 @@ namespace PartyPic.Contracts.Events
             var eventGrid = new EventGrid
             {
                 Rows = events,
-                Total = _eventContext.Events.Count(),
+                Total = totalAfterUserValidations,
                 Current = gridRequest.Current,
                 RowCount = gridRequest.RowCount
             };
@@ -279,34 +293,17 @@ namespace PartyPic.Contracts.Events
 
             var user = _userContext.Users.FirstOrDefault(u => u.UserId == venue.UserId);
 
-            MimeMessage message = new MimeMessage();
-
-            MailboxAddress from = new MailboxAddress("PartyPic Admin", _config.GetValue<string>("EmailFromAdmin"));
-            
-            message.From.Add(from);
-
-            MailboxAddress to = new MailboxAddress(user.Name, user.Email);
-
-            message.To.Add(to);
-
-            message.Subject = _config.GetValue<string>("EmailSubject");
-
             BodyBuilder bodyBuilder = new BodyBuilder();
-            bodyBuilder.HtmlBody = _config.GetValue<string>("EmailTemplate").Replace("***eventName***", evt.Name).Replace("***qrCode***", evt.QRCode).Replace("***eventCode***", evt.Code);
 
-            message.Body = bodyBuilder.ToMessageBody();
+            var imagePath = Path.Combine(AppContext.BaseDirectory, "Assets", "IconoPartyPic.png");
 
-            foreach (var body in message.BodyParts.OfType<TextPart>())
-                body.ContentTransferEncoding = ContentEncoding.Base64;
-
-            SmtpClient client = new SmtpClient();
-            client.CheckCertificateRevocation = false;
-            client.Connect(_config.GetValue<string>("SMTPServer"), 2525, MailKit.Security.SecureSocketOptions.StartTls);
-            client.Authenticate(_config.GetValue<string>("SMTPUser"), _config.GetValue<string>("SMTPPassword"));
-
-            client.Send(message);
-            client.Disconnect(true);
-            client.Dispose();
+            _emailSenderManager.SendEmail(
+                user.Name,
+                user.Email,
+                _config.GetValue<string>("EmailSubject"),
+                _config.GetValue<string>("EmailTemplate").Replace("***eventName***", evt.Name).Replace("***qrCode***", evt.QRCode).Replace("***eventCode***", evt.Code),
+                imagePath
+             );
         }
 
         public EventReadDTO GetEventByEventCode(string eventCode)
@@ -409,6 +406,28 @@ namespace PartyPic.Contracts.Events
             if (!_venueContext.Venues.Any(v => v.VenueId == ev.VenueId))
             {
                 throw new ArgumentNullException(nameof(ev.VenueId));
+            }
+        }
+
+        private async System.Threading.Tasks.Task ValidateUserSubscriptionsAsync()
+        {
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            if (currentUser.RoleId == 2)
+            {
+                if (!_subscriptionContext.Subscriptions.Any(s => s.IsActive))
+                {
+                    throw new NotActiveSubscription();
+                }
+
+                var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.IsActive);
+
+                var mpSub = await _mercadoPagoManager.GetSubscriptionAsync(subscription.MercadoPagoId);
+
+                if (mpSub == null || string.IsNullOrEmpty(mpSub.Status) || mpSub.Status.ToUpper() != "AUTHORIZED")
+                {
+                    throw new NotActiveSubscription();
+                }
             }
         }
     }

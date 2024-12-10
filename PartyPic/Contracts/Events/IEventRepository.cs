@@ -1,6 +1,7 @@
 ﻿using PartyPic.DTOs.Events;
 using PartyPic.Models.Common;
 using PartyPic.Models.Events;
+using System.Threading.Tasks;
 
 namespace PartyPic.Contracts.Events
 {
@@ -8,7 +9,7 @@ namespace PartyPic.Contracts.Events
     {
         AllEventsResponse GetAllEvents();
         EventReadDTO GetEventById(int id);
-        Event CreateEvent(Event ev);
+        Task<Event> CreateEventAsync(Event ev);
         bool SaveChanges();
         void DeleteEvent(int id);
         EventReadDTO UpdateEvent(int id, EventUpdateDTO ev);

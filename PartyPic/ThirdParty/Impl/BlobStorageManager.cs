@@ -1,11 +1,14 @@
 ﻿namespace PartyPic.ThirdParty.Impl
 {
+    using Azure.Storage.Blobs;
     using Microsoft.Extensions.Configuration;
     using Microsoft.WindowsAzure.Storage;
     using Microsoft.WindowsAzure.Storage.Blob;
     using PartyPic.Contracts.Logger;
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.IO.Compression;
     using System.Threading.Tasks;
 
     public class BlobStorageManager : IBlobStorageManager
@@ -98,6 +101,53 @@
                 _logger.LogError($"Error when trying to upload file to blob storage. Exception: " + ex.InnerException + ". Message: " + ex.Message);
                 throw;
             }
+        }
+
+        public async Task<byte[]> DownloadAlbumAsync(List<string> imagePaths, string containerName)
+        {
+            var blobServiceClient = new BlobServiceClient(_config.GetValue<string>("BlobStorageSettings:BlobConnectionAccessKey"));
+            var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
+
+            using (var memoryStream = new MemoryStream())
+            {
+                using (var zipArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+                {
+                    foreach (var imagePath in imagePaths)
+                    {
+                        string fileName = Path.GetFileName(imagePath);
+
+                        var exists = await this.ImageExistsAsync(fileName, containerName);
+                        if (!exists)
+                        {
+                            continue; 
+                        }
+
+                        var blobClient = blobContainerClient.GetBlobClient(fileName);
+
+                        using var imageStream = new MemoryStream();
+                        await blobClient.DownloadToAsync(imageStream);
+
+                        imageStream.Position = 0;
+
+                        var zipEntry = zipArchive.CreateEntry(fileName, CompressionLevel.Optimal);
+
+                        using var zipEntryStream = zipEntry.Open();
+                        await imageStream.CopyToAsync(zipEntryStream);
+                    }
+                }
+
+                memoryStream.Position = 0;
+                return memoryStream.ToArray();
+            }
+        }
+
+        private async Task<bool> ImageExistsAsync(string fileName, string containerName)
+        {
+            var blobServiceClient = new BlobServiceClient(_config.GetValue<string>("BlobStorageSettings:BlobConnectionAccessKey"));
+            var blobContainerClient = blobServiceClient.GetBlobContainerClient(containerName);
+            var blobClient = blobContainerClient.GetBlobClient(fileName);
+
+            return await blobClient.ExistsAsync();
         }
 
         private string GenerateFileName(string fileName)

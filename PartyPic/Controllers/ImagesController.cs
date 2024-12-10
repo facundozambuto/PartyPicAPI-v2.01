@@ -8,6 +8,7 @@ using PartyPic.DTOs.Images;
 using PartyPic.Models.Exceptions;
 using PartyPic.Models.Images;
 using PartyPic.Models.Users;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -36,9 +37,9 @@ namespace PartyPic.Controllers
 
         [HttpGet]
         [Authorize]
-        public ActionResult<IEnumerable<Image>> GetAllImages(int eventId, bool firstRequest, string requestTime)
+        public async Task<ActionResult<IEnumerable<Image>>> GetAllImagesAsync(int eventId, bool firstRequest, string requestTime)
         {
-            var imageItems = _eventImagesRepository.GetAllEventImages(eventId, firstRequest, requestTime);
+            var imageItems = await _eventImagesRepository.GetAllEventImagesAsync(eventId, firstRequest, requestTime);
 
             return Ok(_mapper.Map<IEnumerable<ImageReadDTO>>(imageItems));
         }
@@ -76,7 +77,7 @@ namespace PartyPic.Controllers
 
                 return Ok();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 throw;
             }
@@ -85,7 +86,7 @@ namespace PartyPic.Controllers
         [HttpPost("DeleteImage", Name = "DeleteImage")]
         [Route("~/api/images/delete")]
         [Authorize]
-        public ActionResult DeleteImage(DeleteImageRequest deleteImageRequest)
+        public async Task<ActionResult> DeleteImage(DeleteImageRequest deleteImageRequest)
         {
             try
             {
@@ -93,9 +94,9 @@ namespace PartyPic.Controllers
 
                 deleteImageRequest.UserId = user.UserId;
 
-                return ExecuteMethod<DeleteImageRequest>(() => _eventImagesRepository.DeleteImage(deleteImageRequest));
+                return ExecuteMethod<DeleteImageRequest>(() => _eventImagesRepository.DeleteImageAsync(deleteImageRequest).GetAwaiter().GetResult());
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 throw new UnableToDeleteImageException();
             }
@@ -114,29 +115,11 @@ namespace PartyPic.Controllers
                     throw new NotEventFoundException();
                 }
 
-                var filePaths = Directory.GetFiles(Path.Combine(_config.GetValue<string>("DirectoryEventImagesPath") + eventId));
+                var zipFile = await _eventImagesRepository.DownloadImagesAsZipAsync(eventId);
 
-                var zipFileMemoryStream = new MemoryStream();
-
-                using (ZipArchive archive = new ZipArchive(zipFileMemoryStream, ZipArchiveMode.Update, leaveOpen: true))
-                {
-                    foreach (var filePath in filePaths)
-                    {
-                        var fileName = Path.GetFileName(filePath);
-                        var entry = archive.CreateEntry(fileName);
-                        using (var entryStream = entry.Open())
-                        using (var fileStream = System.IO.File.OpenRead(filePath))
-                        {
-                            await fileStream.CopyToAsync(entryStream);
-                        }
-                    }
-                }
-
-                zipFileMemoryStream.Seek(0, SeekOrigin.Begin);
-                
-                return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");            
+                return File(zipFile, "application/octet-stream", evt.Name + ".zip");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 throw new UnableToDownloadAlbumException();
             }
@@ -155,29 +138,11 @@ namespace PartyPic.Controllers
                     throw new NotEventFoundException();
                 }
 
-                var filePaths = Directory.GetFiles(Path.Combine(_config.GetValue<string>("DirectoryEventImagesPath") + evt.EventId));
+                var zipFile = await _eventImagesRepository.DownloadImagesAsZipAsync(evt.EventId);
 
-                var zipFileMemoryStream = new MemoryStream();
-
-                using (ZipArchive archive = new ZipArchive(zipFileMemoryStream, ZipArchiveMode.Update, leaveOpen: true))
-                {
-                    foreach (var filePath in filePaths)
-                    {
-                        var fileName = Path.GetFileName(filePath);
-                        var entry = archive.CreateEntry(fileName);
-                        using (var entryStream = entry.Open())
-                        using (var fileStream = System.IO.File.OpenRead(filePath))
-                        {
-                            await fileStream.CopyToAsync(entryStream);
-                        }
-                    }
-                }
-
-                zipFileMemoryStream.Seek(0, SeekOrigin.Begin);
-
-                return File(zipFileMemoryStream, "application/octet-stream", evt.Name + ".zip");
+                return File(zipFile, "application/octet-stream", evt.Name + ".zip");
             }
-            catch (System.Exception)
+            catch (Exception ex)
             {
                 throw new UnableToDownloadAlbumException();
             }

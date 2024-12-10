@@ -330,6 +330,45 @@ namespace PartyPic.Contracts.Subscriptions
             return response;
         }
 
+        public async Task<SubscriptionReadDTO> ToggleAutoRenewalAsync(int subId)
+        {
+            var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.SubscriptionId == subId);
+
+            var currentUser = (User)_httpContextAccessor.HttpContext.Items["User"];
+
+            if (subscription == null)
+            {
+                throw new NotSubscriptionFoundException();
+            }
+
+            if (subscription.UserId != currentUser.UserId)
+            {
+                throw new InvalidOperationException();
+            }
+
+            if (!subscription.IsActive)
+            {
+                throw new NotActiveSubscription();
+            }
+
+            if (await _mercadoPagoManager.ToggleAutoRenewAsync(subscription.MercadoPagoId, !subscription.IsAutoRenew))
+            {
+                if (subscription.IsAutoRenew)
+                {
+                    subscription.IsActive = false;
+                    subscription.IsCancelled = true;
+                    subscription.CancelledDate = DateTime.Now;
+                }
+                subscription.IsAutoRenew = !subscription.IsAutoRenew;
+            }
+
+            _subscriptionContext.Update(subscription);
+
+            this.SaveChanges();
+
+            return _mapper.Map<SubscriptionReadDTO>(subscription);
+        }
+
         private void ThrowExceptionIfArgumentIsNull(SubscriptionCreateDTO subscription)
         {
             if (subscription == null)

@@ -13,7 +13,7 @@
         public bool IsActive { get; set; }
         public bool IsAutoRenew { get; set; }
         public string MercadoPagoId { get; set; }
-        public Guid MarketReference { get; set; }
+        public Guid? MarketReference { get; set; }
         public DateTime CreatedDatetime { get; set; }
         public DateTime RenewalDate { get; set; }
         public bool IsCancelled { get; set; }
