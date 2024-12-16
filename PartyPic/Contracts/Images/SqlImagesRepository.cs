@@ -8,6 +8,7 @@ using PartyPic.Models.Exceptions;
 using PartyPic.Models.Images;
 using PartyPic.Models.Users;
 using PartyPic.ThirdParty;
+using PartyPic.ThirdParty.Impl;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,7 +26,7 @@ namespace PartyPic.Contracts.Images
         private readonly IBlobStorageManager _blobStorageManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly SubscriptionContext _subscriptionContext;
-        private readonly IMercadoPagoManager _mercadoPagoManager;
+        private readonly PaymentGatewayFactory _factory;
 
         public SqlImagesRepository(ImagesContext imageContext, 
                                     IConfiguration config, 
@@ -34,7 +35,7 @@ namespace PartyPic.Contracts.Images
                                     IBlobStorageManager blobStorageManager,
                                     IHttpContextAccessor httpContextAccessor,
                                     SubscriptionContext subscriptionContext,
-                                    IMercadoPagoManager mercadoPagoManager)
+                                    PaymentGatewayFactory factory)
         {
             _imageContext = imageContext;
             _config = config;
@@ -43,7 +44,7 @@ namespace PartyPic.Contracts.Images
             _blobStorageManager = blobStorageManager;
             _httpContextAccessor = httpContextAccessor;
             _subscriptionContext = subscriptionContext;
-            _mercadoPagoManager = mercadoPagoManager;
+            _factory = factory;
         }
 
         public async Task<IEnumerable<Image>> GetAllEventImagesAsync(int eventId, bool firstRequest, string requestTime)
@@ -256,7 +257,9 @@ namespace PartyPic.Contracts.Images
 
                 var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.IsActive);
 
-                var mpSub = await _mercadoPagoManager.GetSubscriptionAsync(subscription.MercadoPagoId);
+                var paymentGateway = _factory.GetPaymentGateway("MercadoPago");
+
+                var mpSub = await paymentGateway.GetSubscriptionAsync(subscription.MercadoPagoId);
 
                 if (mpSub == null || string.IsNullOrEmpty(mpSub.Status) || mpSub.Status.ToUpper() != "AUTHORIZED")
                 {

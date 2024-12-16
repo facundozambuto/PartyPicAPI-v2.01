@@ -91,7 +91,8 @@ namespace PartyPic
             services.AddScoped<IPaymentRepository, SqlPaymentRepository>();
             services.AddScoped<IPlanRepository, SqlPlanRepository>();
             services.AddScoped<IBlobStorageManager, BlobStorageManager>();
-            services.AddScoped<IMercadoPagoManager, MercadoPagoManager>();
+            services.AddScoped<IPaymentGatewayStrategy, MercadoPagoManager>();
+            services.AddScoped<PaymentGatewayFactory>();
             services.AddScoped<ICurrencyConverter, CurrencyConverterManager>();
             services.AddScoped<ICurrencyConverter, CurrencyConverterManager>();
             services.AddScoped<IEmailSender, EmailSenderManager>();

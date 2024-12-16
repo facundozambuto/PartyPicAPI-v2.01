@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Http;
 using PartyPic.Models.Users;
 using PartyPic.ThirdParty;
 using PartyPic.Contracts.Subscriptions;
+using PartyPic.ThirdParty.Impl;
 
 namespace PartyPic.Contracts.Events
 {
@@ -35,7 +36,7 @@ namespace PartyPic.Contracts.Events
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IEmailSender _emailSenderManager;
         private readonly SubscriptionContext _subscriptionContext;
-        private readonly IMercadoPagoManager _mercadoPagoManager;
+        private readonly PaymentGatewayFactory _factory;
 
         public SqlEventRepository(
             EventContext eventContext, 
@@ -48,7 +49,7 @@ namespace PartyPic.Contracts.Events
             IHttpContextAccessor httpContextAccessor,
             IEmailSender emailSenderManager,
             SubscriptionContext subscriptionContext,
-            IMercadoPagoManager mercadoPagoManager)
+            PaymentGatewayFactory factory)
         {
             _eventContext = eventContext;
             _mapper = mapper;
@@ -60,7 +61,7 @@ namespace PartyPic.Contracts.Events
             _httpContextAccessor = httpContextAccessor;
             _emailSenderManager = emailSenderManager;
             _subscriptionContext = subscriptionContext;
-            _mercadoPagoManager = mercadoPagoManager;
+            _factory = factory;
         }
 
         public AllEventsResponse GetAllEvents()
@@ -422,7 +423,9 @@ namespace PartyPic.Contracts.Events
 
                 var subscription = _subscriptionContext.Subscriptions.FirstOrDefault(s => s.IsActive);
 
-                var mpSub = await _mercadoPagoManager.GetSubscriptionAsync(subscription.MercadoPagoId);
+                var paymentGateway = _factory.GetPaymentGateway("MercadoPago");
+
+                var mpSub = await paymentGateway.GetSubscriptionAsync(subscription.MercadoPagoId);
 
                 if (mpSub == null || string.IsNullOrEmpty(mpSub.Status) || mpSub.Status.ToUpper() != "AUTHORIZED")
                 {

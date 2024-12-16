@@ -14,6 +14,8 @@ using PartyPic.Contracts.Plans;
 using PartyPic.Contracts.Users;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using PartyPic.ThirdParty.Impl;
+using PartyPic.Contracts.Subscriptions;
 
 namespace PartyPic.Contracts.Subscriptions
 {
@@ -22,26 +24,26 @@ namespace PartyPic.Contracts.Subscriptions
         private readonly SubscriptionContext _subscriptionContext;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly IMercadoPagoManager _mercadoPagoManager;
         private readonly ICurrencyConverter _currencyConverterManager;
         private readonly PlanContext _planContext;
         private readonly UserContext _userContext;
+        private readonly PaymentGatewayFactory _factory;
 
-        public SqlSubscriptionRepository(SubscriptionContext subscriptionContext, 
-                                        IMapper mapper, 
-                                        IHttpContextAccessor httpContextAccessor, 
-                                        IMercadoPagoManager mercadoPagoManager,
+        public SqlSubscriptionRepository(SubscriptionContext subscriptionContext,
+                                        IMapper mapper,
+                                        IHttpContextAccessor httpContextAccessor,
                                         ICurrencyConverter currencyConverterManager,
                                         PlanContext planContext,
-                                        UserContext userContext)
+                                        UserContext userContext,
+                                        PaymentGatewayFactory factory)
         {
             _subscriptionContext = subscriptionContext;
             _mapper = mapper;
             _httpContextAccessor = httpContextAccessor;
-            _mercadoPagoManager = mercadoPagoManager;
             _planContext = planContext;
             _userContext = userContext;
             _currencyConverterManager = currencyConverterManager;
+            _factory = factory;
         }
 
         public SubscriptionReadDTO CreateSubscription(SubscriptionCreateDTO subscriptionDto)
@@ -72,7 +74,9 @@ namespace PartyPic.Contracts.Subscriptions
 
             this.SaveChanges();
 
-            var mpInitPoint = _mercadoPagoManager.CreateSubscription(new MPSNewSubscriptionRequest
+            var paymentGateway = _factory.GetPaymentGateway("MercadoPago");
+
+            var mpInitPoint = paymentGateway.CreateSubscription(new MPSNewSubscriptionRequest
             {
                 MarketReference = newSub.MarketReference,
                 IsAutoRenew = newSub.IsAutoRenew,
@@ -154,7 +158,9 @@ namespace PartyPic.Contracts.Subscriptions
                     {
                         try
                         {
-                            var mpSub = await _mercadoPagoManager.GetSubscriptionAsync(activeSub.MercadoPagoId);
+                            var paymentGateway = _factory.GetPaymentGateway("MercadoPago");
+
+                            var mpSub = await paymentGateway.GetSubscriptionAsync(activeSub.MercadoPagoId);
 
                             if (mpSub.Status.ToUpper() != "AUTHORIZED")
                             {
@@ -304,7 +310,9 @@ namespace PartyPic.Contracts.Subscriptions
                 throw new InvalidOperationException();
             }
 
-            var mercadoPagoSubscription = _mercadoPagoManager.GetSubscriptionByExternalReference(externalReference);
+            var paymentGateway = _factory.GetPaymentGateway("MercadoPago");
+
+            var mercadoPagoSubscription = paymentGateway.GetSubscriptionByExternalReference(externalReference);
 
             if (mercadoPagoSubscription == null || mercadoPagoSubscription.Status.ToUpper() != "AUTHORIZED")
             {
@@ -351,7 +359,9 @@ namespace PartyPic.Contracts.Subscriptions
                 throw new NotActiveSubscription();
             }
 
-            if (await _mercadoPagoManager.ToggleAutoRenewAsync(subscription.MercadoPagoId, !subscription.IsAutoRenew))
+            var paymentGateway = _factory.GetPaymentGateway("MercadoPago");
+
+            if (await paymentGateway.ToggleAutoRenewAsync(subscription.MercadoPagoId, !subscription.IsAutoRenew))
             {
                 if (subscription.IsAutoRenew)
                 {
@@ -388,5 +398,83 @@ namespace PartyPic.Contracts.Subscriptions
 
             return _currencyConverterManager.GetAmountOfPesosByUSD(amountOfUSD: latestPlanPrice);
         }
+    }
+}
+
+
+public class SubscriptionRepository : ISubscriptionRepository
+{
+    private readonly SubscriptionContext _context;
+
+    public SubscriptionRepository(SubscriptionContext context)
+    {
+        _context = context;
+    }
+
+    public List<Subscription> GetAll()
+    {
+        return _context.Subscriptions.ToList();
+    }
+
+    public void Add(Subscription profile)
+    {
+        _context.Subscriptions.Add(profile);
+        _context.SaveChanges();
+    }
+
+}
+    public AllSubscriptionsResponse GetAllSubscriptions()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SubscriptionReadDTO> GetSubscriptionByIdAsync(int id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public SubscriptionReadDTO CreateSubscription(SubscriptionCreateDTO subscription)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool SaveChanges()
+    {
+        throw new NotImplementedException();
+    }
+
+    public void DeleteSubscription(int id)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SubscriptionReadDTO> UpdateSubscriptionAsync(int id, SubscriptionUpdateDTO subscription)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void PartiallyUpdate(int id, SubscriptionUpdateDTO subscription)
+    {
+        throw new NotImplementedException();
+    }
+
+    public SubscriptionGrid GetAllSubscriptionsForGrid(GridRequest gridRequest)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<AllSubscriptionsResponse> GetAllMySubscriptionsAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    public SubscriptionReadDTO ConfirmSubscription(string externalReference)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SubscriptionReadDTO> ToggleAutoRenewalAsync(int subId)
+    {
+        throw new NotImplementedException();
     }
 }

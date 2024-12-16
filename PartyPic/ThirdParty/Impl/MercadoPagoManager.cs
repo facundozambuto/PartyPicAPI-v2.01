@@ -11,10 +11,11 @@ using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Text;
+using PartyPic.ThirdParty.Models;
 
 namespace PartyPic.ThirdParty.Impl
 {
-    public class MercadoPagoManager : IMercadoPagoManager
+    public class MercadoPagoManager : IPaymentGatewayStrategy
     {
         private readonly IConfiguration _config;
         private const string BaseUrl = "https://api.mercadopago.com/preapproval/";
@@ -22,6 +23,10 @@ namespace PartyPic.ThirdParty.Impl
         public MercadoPagoManager(IConfiguration config)
         {
             _config = config;
+        }
+
+        public MercadoPagoManager()
+        {
         }
 
         public string CreateSubscription(MPSNewSubscriptionRequest request)
@@ -36,7 +41,7 @@ namespace PartyPic.ThirdParty.Impl
                 {
                     Frequency = 1,
                     FrequencyType = request.PlanType,
-                    TransactionAmount = (decimal)request.Amount,
+                    TransactionAmount = Convert.ToInt32((decimal)request.Amount),
                     CurrencyId = "ARS"
                 };
 
