@@ -7,6 +7,7 @@ namespace PartyPic.Contracts.Events
 {
     public interface IEventRepository
     {
+        AllEventsResponse GetAllEventsPublic();
         AllEventsResponse GetAllEvents();
         EventReadDTO GetEventById(int id);
         Task<Event> CreateEventAsync(Event ev);

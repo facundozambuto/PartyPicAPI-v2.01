@@ -91,6 +91,16 @@ namespace PartyPic.Contracts.Events
             };
         }
 
+        public AllEventsResponse GetAllEventsPublic()
+        {
+            var events = _mapper.Map<List<EventReadDTO>>(_eventContext.Events.ToList());
+
+            return new AllEventsResponse
+            {
+                Events = events
+            };
+        }
+
         public EventReadDTO GetEventById(int id)
         {
             var retrievedEvent = _eventContext.Events.AsNoTracking().FirstOrDefault(ev => ev.EventId.Equals(id));

@@ -168,7 +168,12 @@ namespace PartyPic.Contracts.BannedProfiles
         {
             var bannedProfile = _mapper.Map<BannedProfileReadDTO>(_bannedProfileContext.BannedProfiles.FirstOrDefault(bp => bp.ProfileId == bannedProfileId));
 
-            var events = _eventRepository.GetAllEvents().Events;
+            if (bannedProfile == null)
+            {
+                return null;
+            }
+
+            var events = _eventRepository.GetAllEventsPublic().Events;
 
             var users = _userRepository.GetAllUsers().Users;
 
