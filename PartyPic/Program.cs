@@ -81,6 +81,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("CorsApi", builder =>
     {
         builder.WithOrigins("http://local-web.partypic.com")
+            .WithOrigins("http://www.partypic.fun")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
