@@ -58,7 +58,7 @@ namespace PartyPic.ThirdParty.Impl
                     PayerEmail = request.UserEmail,
                     AutoRecurring = autoRecurring,
                     Status = "pending",
-                    BackUrl = "http://local-web.partypic.com/admin/suscripcion-exitosa.html?externalRef=" + request.MarketReference.ToString()
+                    BackUrl = "https://www.partypic.com/admin/suscripcion-exitosa.html?externalRef=" + request.MarketReference.ToString()
                 };
 
                 Preapproval preapproval = preapprovalClient.Create(preapprovalRequest);
