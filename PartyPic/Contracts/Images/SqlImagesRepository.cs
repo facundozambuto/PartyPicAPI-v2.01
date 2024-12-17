@@ -112,7 +112,7 @@ namespace PartyPic.Contracts.Images
                 if (file.Length > 0)
                 {
                     var imageModel = _mapper.Map<Image>(uploadImage);
-
+                     
                     var fileUri = await this.SendImageToAzureAsync(file);
 
                     if (string.IsNullOrEmpty(fileUri))
